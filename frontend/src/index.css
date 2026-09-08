@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #0a0f1e;
+    color: #ffffff;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Status Dot System (CSS only, no icon) as defined in Document 04 */
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-online {
+  background: #00f5a0;
+  box-shadow: 0 0 6px rgba(0, 245, 160, 0.6);
+}
+
+.dot-warning {
+  background: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.6);
+}
+
+.dot-danger {
+  background: #ff4d6d;
+  box-shadow: 0 0 6px rgba(255, 77, 109, 0.6);
+}
+
+.dot-offline {
+  background: #6b7280;
+}
+
+/* Custom scrollbar for dark transport control room feel */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0f1e;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
