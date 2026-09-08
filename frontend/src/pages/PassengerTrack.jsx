@@ -17,6 +17,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+import api from '../utils/api';
+
 const FLEET_BUSES = [
   'MH-40-AA-1111',
   'MH-40-AA-2222',
@@ -51,23 +53,18 @@ const PassengerTrack = () => {
     if (isManual) setIsRefreshing(true);
     
     try {
-      const res = await fetch(`/api/track/${encodeURIComponent(busNum.trim())}`);
-      if (!res.ok) {
-        if (res.status === 404) {
-          setError(`Bus "${busNum}" not found in active fleet.`);
-          setBusData(null);
-        } else {
-          setError('Failed to fetch live bus telemetry.');
-        }
-        return;
-      }
-      const data = await res.json();
-      setBusData(data);
+      const res = await api.get(`/track/${encodeURIComponent(busNum.trim())}`);
+      setBusData(res.data);
       setError(null);
       setLastSync(new Date());
     } catch (err) {
-      console.error('Fetch track error:', err);
-      setError('Connection to tracking network lost.');
+      if (err.response && err.response.status === 404) {
+        setError(`Bus "${busNum}" not found in active fleet.`);
+        setBusData(null);
+      } else {
+        console.error('Fetch track error:', err);
+        setError('Connection to tracking network lost.');
+      }
     } finally {
       setLoading(false);
       if (isManual) {

@@ -61,7 +61,7 @@ BusTrackSystem/
 - [x] **Phase 11 — Analytics**: Fleet utilization charts and busiest hours insights.
 - [x] **Phase 12 — UI Polish**: Control room styling, loading states, error boundaries.
 - [x] **Phase 13 — Testing**: End-to-end integration and hardware failover verification.
-- [ ] **Phase 14 — Deployment**: Vercel & Railway hosting setup.
+- [x] **Phase 14 — Deployment**: Vercel & Railway hosting setup.
 
 ---
 
