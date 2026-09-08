@@ -1,5 +1,6 @@
 const Bus = require('../models/Bus');
 const Trip = require('../models/Trip');
+const RouteChange = require('../models/RouteChange');
 const { broadcast } = require('../websocket');
 
 // GET /api/buses - Return all buses
@@ -179,14 +180,53 @@ exports.updateRoute = async (req, res) => {
       return res.status(404).json({ message: 'Bus not found' });
     }
 
+    const oldStops = [...(bus.stops || [])];
+
+    // Determine changeType for audit log
+    let changeType = 'reorder';
+    if (stops && stops.length > oldStops.length) {
+      changeType = 'add';
+    } else if (stops && stops.length < oldStops.length) {
+      changeType = 'remove';
+    } else if (capacity !== undefined && Number(capacity) !== bus.capacity) {
+      changeType = 'capacity';
+    } else if (routeType !== undefined && routeType !== bus.routeType) {
+      changeType = 'routetype';
+    } else if (stops && JSON.stringify(stops) !== JSON.stringify(oldStops)) {
+      changeType = 'reorder';
+    }
+
     if (stops) bus.stops = stops;
     if (routeType) bus.routeType = routeType;
-    if (capacity) bus.capacity = capacity;
-    if (startingStopIndex !== undefined) bus.startingStopIndex = startingStopIndex;
+    if (capacity !== undefined) bus.capacity = Number(capacity);
+    if (startingStopIndex !== undefined) bus.startingStopIndex = Number(startingStopIndex);
+
+    // Keep current stop in bounds
+    if (bus.currentStopIndex >= bus.stops.length) {
+      bus.currentStopIndex = 0;
+    }
+    bus.currentStop = bus.stops?.[bus.currentStopIndex] || '';
 
     await bus.save();
+
+    // Save to RouteChange audit collection
+    const auditLog = await RouteChange.create({
+      busNumber: bus.busNumber,
+      changedBy: req.user?.email || 'admin@bustrack.com',
+      changedAt: new Date(),
+      oldStops,
+      newStops: bus.stops,
+      changeType
+    });
+
     broadcast({ type: 'BUS_UPDATE', data: bus });
-    res.status(200).json(bus);
+    broadcast({ type: 'ROUTE_CHANGE', data: { bus, auditLog } });
+
+    res.status(200).json({
+      message: 'Route updated successfully',
+      bus,
+      auditLog
+    });
   } catch (error) {
     console.error('Error updating route:', error);
     res.status(400).json({ message: error.message || 'Failed to update route' });
