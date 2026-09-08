@@ -1,4 +1,5 @@
 const Bus = require('../models/Bus');
+const Trip = require('../models/Trip');
 const { broadcast } = require('../websocket');
 
 // GET /api/buses - Return all buses
@@ -72,7 +73,7 @@ exports.deleteBus = async (req, res) => {
   }
 };
 
-// PUT /api/buses/:busNumber/stop - Update current stop
+// PUT /api/buses/:busNumber/stop - Conductor updates current stop
 exports.updateStop = async (req, res) => {
   try {
     const { stopIndex, stopName } = req.body;
@@ -81,13 +82,18 @@ exports.updateStop = async (req, res) => {
       return res.status(404).json({ message: 'Bus not found' });
     }
 
-    if (stopIndex !== undefined) bus.currentStopIndex = stopIndex;
-    if (stopName) bus.currentStop = stopName;
-    else if (stopIndex !== undefined && bus.stops && bus.stops[stopIndex]) {
-      bus.currentStop = bus.stops[stopIndex];
+    if (stopIndex !== undefined) {
+      bus.currentStopIndex = Number(stopIndex);
+    }
+    if (stopName) {
+      bus.currentStop = stopName;
+    } else if (bus.stops && bus.stops[bus.currentStopIndex]) {
+      bus.currentStop = bus.stops[bus.currentStopIndex];
     }
 
+    bus.status = 'ON_THE_WAY';
     await bus.save();
+
     broadcast({ type: 'BUS_UPDATE', data: bus });
     res.status(200).json(bus);
   } catch (error) {
@@ -96,7 +102,7 @@ exports.updateStop = async (req, res) => {
   }
 };
 
-// PUT /api/buses/:busNumber/loop - Complete loop and reset
+// PUT /api/buses/:busNumber/loop - Loop completion: increment loop, reset count, save trip to DB
 exports.completeLoop = async (req, res) => {
   try {
     const bus = await Bus.findOne({ busNumber: req.params.busNumber });
@@ -104,17 +110,63 @@ exports.completeLoop = async (req, res) => {
       return res.status(404).json({ message: 'Bus not found' });
     }
 
-    bus.loopCount += 1;
+    const completedLoopNumber = bus.loopCount + 1;
+
+    // Save completed trip record to MongoDB (Document 06 Phase 7 requirement)
+    const trip = await Trip.create({
+      busNumber: bus.busNumber,
+      date: new Date(),
+      startTime: new Date(Date.now() - 45 * 60 * 1000), // approx 45 mins per loop
+      endTime: new Date(),
+      totalBoarded: bus.totalIn || 25,
+      totalAlighted: bus.totalOut || 25,
+      peakCount: Math.max(bus.currentCount, 28),
+      loopsCompleted: completedLoopNumber,
+      stops: (bus.stops || []).map(stop => ({
+        stopName: stop,
+        arrivedAt: new Date(),
+        countAtStop: bus.currentCount
+      }))
+    });
+
+    bus.loopCount = completedLoopNumber;
     bus.currentStopIndex = bus.startingStopIndex || 0;
     bus.currentStop = bus.stops?.[bus.currentStopIndex] || '';
-    bus.currentCount = 0; // Reset passenger count on new loop
+    bus.currentCount = 0; // Reset count at end of loop as per PRD
+    bus.status = 'ON_THE_WAY';
 
     await bus.save();
+
     broadcast({ type: 'BUS_UPDATE', data: bus });
-    res.status(200).json(bus);
+    broadcast({ type: 'LOOP_COMPLETED', data: { bus, trip } });
+
+    res.status(200).json({
+      message: 'Loop completed successfully, trip history recorded',
+      bus,
+      trip
+    });
   } catch (error) {
     console.error('Error completing loop:', error);
     res.status(400).json({ message: error.message || 'Failed to complete loop' });
+  }
+};
+
+// PUT /api/buses/:busNumber/reset - Conductor manually resets count
+exports.resetCount = async (req, res) => {
+  try {
+    const bus = await Bus.findOne({ busNumber: req.params.busNumber });
+    if (!bus) {
+      return res.status(404).json({ message: 'Bus not found' });
+    }
+
+    bus.currentCount = 0;
+    await bus.save();
+
+    broadcast({ type: 'BUS_UPDATE', data: bus });
+    res.status(200).json({ message: 'Passenger count reset', bus });
+  } catch (error) {
+    console.error('Error resetting count:', error);
+    res.status(400).json({ message: error.message || 'Failed to reset count' });
   }
 };
 

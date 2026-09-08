@@ -1,15 +1,21 @@
 const express = require('express');
 const router = express.Router();
 const busController = require('../controllers/busController');
-const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { protect, adminOnly, checkBusAccess } = require('../middleware/authMiddleware');
 
+// Public or Protected Read
 router.get('/', busController.getAllBuses);
-router.post('/', protect, adminOnly, busController.createBus);
 router.get('/:busNumber', busController.getBusByNumber);
-router.put('/:busNumber', protect, busController.updateBus);
+
+// Admin Only Fleet Controls
+router.post('/', protect, adminOnly, busController.createBus);
 router.delete('/:busNumber', protect, adminOnly, busController.deleteBus);
-router.put('/:busNumber/stop', protect, busController.updateStop);
-router.put('/:busNumber/loop', protect, busController.completeLoop);
 router.put('/:busNumber/route', protect, adminOnly, busController.updateRoute);
+router.put('/:busNumber', protect, adminOnly, busController.updateBus);
+
+// Conductor / Assigned Bus Operations
+router.put('/:busNumber/stop', protect, checkBusAccess, busController.updateStop);
+router.put('/:busNumber/loop', protect, checkBusAccess, busController.completeLoop);
+router.put('/:busNumber/reset', protect, checkBusAccess, busController.resetCount);
 
 module.exports = router;

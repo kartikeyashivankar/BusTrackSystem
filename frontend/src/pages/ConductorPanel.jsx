@@ -1,91 +1,313 @@
-import React, { useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { MapPin, RotateCcw, Repeat, LogOut, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import {
+  MapPin,
+  RotateCcw,
+  Repeat,
+  LogOut,
+  CheckCircle,
+  AlertTriangle,
+  Radio,
+  Wifi,
+  WifiOff
+} from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useWebSocket } from '../hooks/useWebSocket';
+import api from '../utils/api';
+import StatusDot from '../components/StatusDot';
 
 const ConductorPanel = () => {
-  const { busNumber = 'MH-40-AA-1111' } = useParams();
-  const { logout } = useAuth();
-  const [stops] = useState(['Manewada', 'TPoint', 'Ganeshpeth', 'Burdi', 'Besa']);
-  const [currentStopIndex, setCurrentStopIndex] = useState(1);
-  const [currentCount] = useState(24);
-  const [capacity] = useState(45);
-  const [showLoopModal, setShowLoopModal] = useState(false);
+  const { busNumber: routeParamBus } = useParams();
+  const { user, logout } = useAuth();
+  const { lastMessage, isConnected: isWsConnected } = useWebSocket();
+  const navigate = useNavigate();
 
-  const handleStopSelect = (index) => {
-    setCurrentStopIndex(index);
-    if (index === stops.length - 1) {
-      setShowLoopModal(true);
+  // Use assigned bus if conductor, or route param
+  const busNumber = routeParamBus || user?.assignedBus || 'MH-40-AA-1111';
+
+  const [bus, setBus] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [showLoopModal, setShowLoopModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  // Fetch initial bus data
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBus = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/buses/${busNumber}`);
+        if (isMounted) setBus(res.data);
+      } catch (err) {
+        console.error('Error fetching bus for conductor panel:', err);
+        if (isMounted) setErrorMessage(err.response?.data?.message || 'Failed to load bus data');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    fetchBus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [busNumber]);
+
+  // Real-time synchronization from WebSocket
+  useEffect(() => {
+    if (!lastMessage) return;
+
+    if (
+      (lastMessage.type === 'BUS_UPDATE' || lastMessage.type === 'HARDWARE_EVENT') &&
+      lastMessage.data &&
+      lastMessage.data.busNumber === busNumber
+    ) {
+      setBus((prev) => ({
+        ...prev,
+        ...lastMessage.data
+      }));
+    }
+  }, [lastMessage, busNumber]);
+
+  // Tap stop handler
+  const handleStopSelect = async (stopIndex) => {
+    if (updating || !bus) return;
+
+    try {
+      setUpdating(true);
+      const stopName = bus.stops?.[stopIndex] || '';
+      const res = await api.put(`/buses/${busNumber}/stop`, {
+        stopIndex,
+        stopName
+      });
+
+      if (res.data) {
+        setBus(res.data);
+      }
+
+      // If conductor tapped the terminal/last stop, trigger loop confirmation modal
+      if (stopIndex === (bus.stops?.length || 0) - 1) {
+        setShowLoopModal(true);
+      }
+    } catch (err) {
+      console.error('Error updating stop:', err);
+      alert(err.response?.data?.message || 'Error advancing to next stop');
+    } finally {
+      setUpdating(false);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-darkBg text-white p-4 flex flex-col justify-between max-w-md mx-auto select-none">
-      {/* Top Header */}
-      <div>
-        <div className="flex items-center justify-between pb-4 border-b border-borderMuted">
-          <div>
-            <h1 className="font-mono text-xl font-bold">{busNumber}</h1>
-            <p className="text-[11px] text-textSecondary uppercase font-mono">Conductor Terminal</p>
-          </div>
+  // Loop confirmation handler: resets count, increments loop, saves trip to DB
+  const handleConfirmLoop = async () => {
+    try {
+      setUpdating(true);
+      const res = await api.put(`/buses/${busNumber}/loop`);
+      if (res.data?.bus) {
+        setBus(res.data.bus);
+      }
+      setShowLoopModal(false);
+    } catch (err) {
+      console.error('Error completing loop:', err);
+      alert(err.response?.data?.message || 'Failed to complete loop');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  // Manual reset handler
+  const handleResetCount = async () => {
+    try {
+      setUpdating(true);
+      const res = await api.put(`/buses/${busNumber}/reset`);
+      if (res.data?.bus) {
+        setBus(res.data.bus);
+      }
+      setShowResetModal(false);
+    } catch (err) {
+      console.error('Error resetting passenger count:', err);
+      alert(err.response?.data?.message || 'Failed to reset count');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-darkBg text-white flex items-center justify-center p-4">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-safe border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="font-mono text-xs text-textSecondary uppercase tracking-wider">
+            Loading Conductor Terminal...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (errorMessage || !bus) {
+    return (
+      <div className="min-h-screen bg-darkBg text-white flex items-center justify-center p-4">
+        <div className="max-w-sm w-full bg-cardBg border border-danger/30 rounded-card p-6 text-center space-y-4">
+          <AlertTriangle size={36} className="text-danger mx-auto" strokeWidth={1.5} />
+          <h2 className="text-base font-bold">{errorMessage || 'Access Denied'}</h2>
+          <p className="text-xs text-textSecondary">
+            You can only access the bus assigned to your account.
+          </p>
           <button
             onClick={logout}
-            className="p-2 text-textSecondary hover:text-danger rounded-btn bg-gray-900 border border-borderMuted"
-            title="Logout"
+            className="w-full bg-gray-800 hover:bg-gray-700 text-white font-mono text-xs py-2.5 rounded-btn transition"
           >
-            <LogOut size={18} strokeWidth={1.5} />
+            Logout to Login Page
           </button>
         </div>
+      </div>
+    );
+  }
 
-        {/* Real-time Occupancy Display */}
-        <div className="my-4 p-4 bg-cardBg border border-borderMuted rounded-card flex items-center justify-between">
+  const {
+    capacity = 45,
+    currentCount = 0,
+    stops = [],
+    currentStopIndex = 0,
+    loopCount = 0,
+    isHardwareConnected = false
+  } = bus;
+
+  const occupancyPercent = capacity > 0 ? Math.min(100, Math.round((currentCount / capacity) * 100)) : 0;
+  const isDanger = occupancyPercent >= 90;
+  const isWarning = occupancyPercent >= 70 && !isDanger;
+
+  let dotStatus = 'offline';
+  if (isHardwareConnected) {
+    if (isDanger) dotStatus = 'danger';
+    else if (isWarning) dotStatus = 'warning';
+    else dotStatus = 'online';
+  }
+
+  return (
+    <div className="min-h-screen bg-darkBg text-white flex flex-col justify-between max-w-md mx-auto p-4 select-none">
+      {/* Top Header */}
+      <div>
+        <div className="flex items-center justify-between pb-3 border-b border-borderMuted">
           <div>
-            <p className="text-xs uppercase font-mono text-textSecondary">Hardware Count</p>
-            <div className="flex items-baseline space-x-1">
-              <span className="font-mono text-3xl font-bold text-safe">{currentCount}</span>
-              <span className="font-mono text-sm text-textTertiary">/ {capacity}</span>
+            <div className="flex items-center space-x-2">
+              <span className="font-mono text-xl font-bold tracking-wide">{bus.busNumber}</span>
+              <StatusDot status={dotStatus} />
+            </div>
+            <p className="text-[10px] text-textSecondary uppercase font-mono mt-0.5">
+              Conductor: {user?.name || 'Assigned Staff'}
+            </p>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowResetModal(true)}
+              title="Reset Count"
+              className="p-2 text-textSecondary hover:text-white rounded-btn bg-gray-900 border border-borderMuted transition"
+            >
+              <RotateCcw size={18} strokeWidth={1.5} />
+            </button>
+            <button
+              onClick={logout}
+              title="Logout"
+              className="p-2 text-textSecondary hover:text-danger rounded-btn bg-gray-900 border border-borderMuted transition"
+            >
+              <LogOut size={18} strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+
+        {/* Real-time Hardware Telemetry Bar */}
+        <div className={`my-3.5 p-4 bg-cardBg border rounded-card flex items-center justify-between shadow-lg transition-all ${
+          isDanger ? 'border-danger/40 shadow-glowDanger' : isWarning ? 'border-warning/30' : 'border-borderMuted'
+        }`}>
+          <div>
+            <div className="flex items-center space-x-1.5 text-xs text-textSecondary font-mono uppercase mb-1">
+              <Radio size={14} className={isHardwareConnected ? 'text-safe animate-pulse' : 'text-textTertiary'} />
+              <span>Hardware Occupancy</span>
+            </div>
+            <div className="flex items-baseline space-x-1.5">
+              <span className="font-mono text-3xl font-bold text-white">{currentCount}</span>
+              <span className="font-mono text-xs text-textTertiary">/ {capacity} passengers</span>
             </div>
           </div>
+
           <div className="text-right">
-            <span className="text-xs font-mono px-2.5 py-1 rounded bg-safe/10 text-safe border border-safe/20">
-              NORMAL
+            <div className={`font-mono text-sm font-bold px-3 py-1 rounded ${
+              isDanger
+                ? 'bg-danger text-darkBg'
+                : isWarning
+                ? 'bg-warning text-darkBg'
+                : 'bg-safe/20 text-safe border border-safe/30'
+            }`}>
+              {isDanger ? 'FULL' : isWarning ? 'BUSY' : 'NORMAL'}
+            </div>
+            <span className="font-mono text-[10px] text-textSecondary mt-1 block">
+              {occupancyPercent}% capacity
             </span>
           </div>
         </div>
 
-        {/* Current Stop Indicator */}
+        {/* Current Active Stop Banner */}
         <div className="mb-4">
-          <p className="text-xs font-mono uppercase text-textSecondary mb-2 flex items-center space-x-1">
+          <p className="text-[11px] font-mono uppercase text-textSecondary mb-1.5 flex items-center space-x-1">
             <MapPin size={14} className="text-safe" />
-            <span>Active Stop</span>
+            <span>Currently Boarding Station</span>
           </p>
-          <div className="p-4 bg-safe/10 border border-safe/40 rounded-card">
-            <p className="text-xl font-bold text-safe">{stops[currentStopIndex]}</p>
-            <p className="text-[11px] text-textSecondary mt-1 font-mono">Stop #{currentStopIndex + 1} of {stops.length}</p>
+          <div className="p-4 bg-safe/10 border border-safe/40 rounded-card flex items-center justify-between shadow-glowSafe">
+            <div>
+              <p className="text-xl font-bold text-safe tracking-wide">
+                {stops[currentStopIndex] || bus.currentStop || 'Station A'}
+              </p>
+              <p className="text-[11px] text-textSecondary font-mono mt-0.5">
+                Station #{currentStopIndex + 1} of {stops.length}
+              </p>
+            </div>
+            <span className="font-mono text-xs px-2.5 py-1 rounded bg-safe text-darkBg font-bold">
+              ACTIVE
+            </span>
           </div>
         </div>
 
-        {/* Next Stop Tap Buttons (Min 48px height) */}
+        {/* Large Tap Targets for All Stops (Min 52px height for one-handed mobile use) */}
         <div>
-          <p className="text-xs font-mono uppercase text-textSecondary mb-2">Tap Arrived Stop</p>
-          <div className="space-y-2">
+          <p className="text-[11px] font-mono uppercase text-textSecondary mb-2">
+            Tap Arrived Station (One-Touch Update)
+          </p>
+          <div className="space-y-2 max-h-[42vh] overflow-y-auto pr-1">
             {stops.map((stop, idx) => {
               const isCurrent = idx === currentStopIndex;
+              const isPast = idx < currentStopIndex;
+
               return (
                 <button
                   key={idx}
+                  type="button"
+                  disabled={updating}
                   onClick={() => handleStopSelect(idx)}
-                  className={`w-full min-h-[48px] px-4 py-3 rounded-btn text-left font-medium text-sm transition flex items-center justify-between ${
+                  className={`w-full min-h-[52px] px-4 py-3 rounded-btn text-left font-medium text-sm transition flex items-center justify-between border ${
                     isCurrent
-                      ? 'bg-safe text-darkBg font-bold shadow-glowSafe'
-                      : 'bg-cardBg border border-borderMuted text-textSecondary hover:text-white hover:border-gray-600'
+                      ? 'bg-safe text-darkBg font-bold border-safe shadow-glowSafe'
+                      : isPast
+                      ? 'bg-cardBg/60 text-textSecondary border-borderMuted hover:border-gray-600'
+                      : 'bg-cardBg text-white border-borderMuted hover:border-safe/60'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="font-mono text-xs opacity-70">#{idx + 1}</span>
-                    <span>{stop}</span>
+                    <span className="font-mono text-xs opacity-75 w-6">#{idx + 1}</span>
+                    <span className="truncate">{stop}</span>
                   </div>
-                  {isCurrent && <CheckCircle size={18} strokeWidth={2} />}
+
+                  <div className="flex items-center space-x-2">
+                    {isCurrent && <CheckCircle size={20} strokeWidth={2.5} />}
+                    {idx === stops.length - 1 && !isCurrent && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-800 text-warning">
+                        Terminus
+                      </span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -93,41 +315,101 @@ const ConductorPanel = () => {
         </div>
       </div>
 
-      {/* Loop Confirmation Modal */}
+      {/* Footer Info & Loop Status */}
+      <div className="pt-3 border-t border-borderMuted mt-3 flex items-center justify-between text-xs text-textSecondary font-mono">
+        <div className="flex items-center space-x-2">
+          <Repeat size={14} className="text-safe" />
+          <span>Loop {loopCount} of today</span>
+        </div>
+        <div className="flex items-center space-x-1 text-[11px]">
+          {isWsConnected ? (
+            <>
+              <Wifi size={13} className="text-safe" />
+              <span className="text-safe">Synced</span>
+            </>
+          ) : (
+            <>
+              <WifiOff size={13} className="text-danger" />
+              <span className="text-danger">Offline</span>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Loop Confirmation Modal (Document 03 & 06) */}
       {showLoopModal && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
-          <div className="bg-cardBg border border-borderMuted p-6 rounded-card max-w-sm w-full space-y-4 text-center">
-            <Repeat size={32} className="mx-auto text-safe" strokeWidth={1.5} />
-            <h3 className="text-lg font-bold text-white">Last Stop Reached</h3>
-            <p className="text-xs text-textSecondary">
-              Bus reached {stops[stops.length - 1]}. Start a new loop? Count will reset and trip will save to database.
-            </p>
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-cardBg border border-borderMuted p-6 rounded-card max-w-sm w-full space-y-4 text-center shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-safe/20 text-safe flex items-center justify-center mx-auto">
+              <Repeat size={28} strokeWidth={2} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Last Stop Reached!</h3>
+              <p className="text-xs text-textSecondary mt-1 leading-relaxed">
+                Bus reached the terminal stop. Complete this loop and start a new loop?
+              </p>
+              <div className="mt-3 p-3 bg-gray-900 rounded-btn text-left text-xs font-mono space-y-1">
+                <p className="text-safe">✓ Trip history will be saved to database</p>
+                <p className="text-safe">✓ Passenger count will reset for new loop</p>
+                <p className="text-safe">✓ Loop counter will increment to {loopCount + 1}</p>
+              </div>
+            </div>
+
             <div className="flex space-x-3 pt-2">
               <button
+                type="button"
                 onClick={() => setShowLoopModal(false)}
-                className="flex-1 py-3 bg-gray-800 text-white rounded-btn text-xs font-mono"
+                className="flex-1 min-h-[48px] bg-gray-800 hover:bg-gray-700 text-white rounded-btn text-xs font-mono font-medium transition"
               >
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  setCurrentStopIndex(0);
-                  setShowLoopModal(false);
-                }}
-                className="flex-1 py-3 bg-safe text-darkBg font-bold rounded-btn text-xs font-mono"
+                type="button"
+                disabled={updating}
+                onClick={handleConfirmLoop}
+                className="flex-1 min-h-[48px] bg-safe text-darkBg font-bold rounded-btn text-xs font-mono hover:bg-safe/90 transition shadow-glowSafe"
               >
-                Yes, Start Loop
+                {updating ? 'Saving...' : 'Yes, Start Loop'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Footer controls */}
-      <div className="pt-4 border-t border-borderMuted mt-4 flex items-center justify-between text-xs text-textTertiary font-mono">
-        <span>BusTrack Mobile Terminal</span>
-        <span>Loop 1</span>
-      </div>
+      {/* Manual Count Reset Confirmation Modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-cardBg border border-borderMuted p-6 rounded-card max-w-sm w-full space-y-4 text-center shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-warning/20 text-warning flex items-center justify-center mx-auto">
+              <RotateCcw size={28} strokeWidth={2} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white">Reset Passenger Count?</h3>
+              <p className="text-xs text-textSecondary mt-1">
+                This will reset the active hardware passenger count back to 0. Use this if sensor calibration is needed.
+              </p>
+            </div>
+
+            <div className="flex space-x-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="flex-1 min-h-[48px] bg-gray-800 hover:bg-gray-700 text-white rounded-btn text-xs font-mono font-medium transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={updating}
+                onClick={handleResetCount}
+                className="flex-1 min-h-[48px] bg-warning text-darkBg font-bold rounded-btn text-xs font-mono hover:bg-warning/90 transition"
+              >
+                {updating ? 'Resetting...' : 'Confirm Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
