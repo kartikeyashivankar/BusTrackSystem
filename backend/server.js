@@ -31,6 +31,7 @@ app.use('/api/buses', busRoutes);
 app.use('/api/trips', tripRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/track', trackRoutes);
+app.use('/api/hardware', require('./routes/hardware'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -48,6 +49,6 @@ initWebSocket(server);
 initSerial();
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`BusTrack Backend Server running on port ${PORT}`);
 });

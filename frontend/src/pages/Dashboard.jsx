@@ -76,27 +76,57 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* BUS FULL Alert Banner (Document 01 Requirement) */}
-      {fullBuses > 0 && (
-        <div className="p-4 bg-danger/10 border border-danger/40 rounded-card flex items-center justify-between shadow-glowDanger">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-danger/20 text-danger rounded-btn">
-              <AlertTriangle size={20} strokeWidth={2} />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white tracking-wide uppercase font-mono">
-                Fleet Capacity Alert: {fullBuses} {fullBuses === 1 ? 'Bus' : 'Buses'} at Critical Capacity
-              </h3>
-              <p className="text-xs text-textSecondary">
-                Audio alarm active for buses reaching or exceeding 90% passenger occupancy.
-              </p>
-            </div>
-          </div>
-          <span className="font-mono text-xs px-3 py-1 rounded bg-danger text-darkBg font-bold uppercase">
-            BUS FULL
+      {/* Hardware Offline / Simulation Mode Banner (Document 03 Error State) */}
+      <div className="p-3 bg-gray-900/80 border border-borderMuted rounded-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono">
+        <div className="flex items-center space-x-2.5">
+          <span className="dot dot-warning" />
+          <span className="text-textSecondary">
+            Hardware offline — simulation mode active (COM3 standby, 115200 baud)
           </span>
         </div>
-      )}
+
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={async () => {
+              try {
+                await api.post('/hardware/simulate', { event: 'ENTRY', busNumber: 'MH-40-AA-1111' });
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="px-2.5 py-1 rounded bg-safe/10 text-safe border border-safe/30 hover:bg-safe/20 transition text-[11px]"
+            title="Simulate Hand Through IR1 to IR2"
+          >
+            + IR Entry (MH-40-AA-1111)
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await api.post('/hardware/simulate', { event: 'EXIT', busNumber: 'MH-40-AA-1111' });
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="px-2.5 py-1 rounded bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition text-[11px]"
+            title="Simulate Hand Through IR2 to IR1"
+          >
+            - IR Exit
+          </button>
+          <button
+            onClick={async () => {
+              try {
+                await api.post('/hardware/simulate', { event: 'RESET', busNumber: 'MH-40-AA-1111' });
+              } catch (e) {
+                console.error(e);
+              }
+            }}
+            className="px-2 py-1 rounded bg-gray-800 text-textSecondary hover:text-white transition text-[11px]"
+            title="Simulate Reset"
+          >
+            Reset
+          </button>
+        </div>
+      </div>
 
       {/* 10 Bus Cards Grid */}
       {loading ? (
