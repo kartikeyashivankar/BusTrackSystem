@@ -45,6 +45,7 @@ function App() {
       {/* Public Pages */}
       <Route path="/" element={<Login />} />
       <Route path="/track" element={<PassengerTrack />} />
+      <Route path="/track/:busNumber" element={<PassengerTrack />} />
 
       {/* Admin Protected Pages */}
       <Route element={<AdminLayout />}>
