@@ -67,7 +67,7 @@ const Dashboard = () => {
           </div>
 
           <div className="bg-cardBg border border-borderMuted rounded-card p-3 flex items-center space-x-3">
-            <AlertTriangle size={18} className={fullBuses > 0 ? 'text-danger' : 'text-textTertiary'} strokeWidth={1.5} />
+            <AlertTriangle size={18} className={fullBuses > 0 ? 'text-danger animate-pulse' : 'text-textTertiary'} strokeWidth={1.5} />
             <div>
               <p className="text-[10px] text-textSecondary uppercase font-mono">Full</p>
               <p className="font-mono text-base font-bold text-white">{fullBuses}</p>
@@ -75,6 +75,28 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* BUS FULL Alert Banner (Document 01 Requirement) */}
+      {fullBuses > 0 && (
+        <div className="p-4 bg-danger/10 border border-danger/40 rounded-card flex items-center justify-between shadow-glowDanger">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-danger/20 text-danger rounded-btn">
+              <AlertTriangle size={20} strokeWidth={2} />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-wide uppercase font-mono">
+                Fleet Capacity Alert: {fullBuses} {fullBuses === 1 ? 'Bus' : 'Buses'} at Critical Capacity
+              </h3>
+              <p className="text-xs text-textSecondary">
+                Audio alarm active for buses reaching or exceeding 90% passenger occupancy.
+              </p>
+            </div>
+          </div>
+          <span className="font-mono text-xs px-3 py-1 rounded bg-danger text-darkBg font-bold uppercase">
+            BUS FULL
+          </span>
+        </div>
+      )}
 
       {/* 10 Bus Cards Grid */}
       {loading ? (

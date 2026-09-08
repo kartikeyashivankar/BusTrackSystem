@@ -1,11 +1,11 @@
 import React from 'react';
-import { Bus, Wifi, WifiOff, LogOut, UserCog } from 'lucide-react';
+import { Bus, Wifi, WifiOff, LogOut, UserCog, Bell, BellOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  const { isConnected } = useWebSocket();
+  const { isConnected, isMuted, toggleMute } = useWebSocket();
 
   return (
     <header className="h-16 bg-cardBg border-b border-borderMuted px-6 flex items-center justify-between sticky top-0 z-30">
@@ -34,6 +34,17 @@ const Navbar = () => {
             </>
           )}
         </div>
+
+        {/* Alarm audio toggle */}
+        <button
+          onClick={toggleMute}
+          title={isMuted ? 'Unmute Full Alarm' : 'Mute Full Alarm'}
+          className={`p-1.5 rounded transition ${
+            isMuted ? 'text-textTertiary hover:text-white hover:bg-gray-800' : 'text-safe hover:bg-safe/10'
+          }`}
+        >
+          {isMuted ? <BellOff size={18} strokeWidth={1.5} /> : <Bell size={18} strokeWidth={1.5} />}
+        </button>
 
         {/* User profile & logout */}
         {user && (
