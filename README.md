@@ -58,7 +58,7 @@ BusTrackSystem/
 - [x] **Phase 8 — Admin Route Editor**: Stop management, reordering, route type toggle, capacity.
 - [x] **Phase 9 — Trip History**: Loop completion history and ridership audit log.
 - [x] **Phase 10 — Public Passenger View**: Unauthenticated bus crowding status checker.
-- [ ] **Phase 11 — Analytics**: Fleet utilization charts and busiest hours insights.
+- [x] **Phase 11 — Analytics**: Fleet utilization charts and busiest hours insights.
 - [ ] **Phase 12 — UI Polish**: Control room styling, loading states, error boundaries.
 - [ ] **Phase 13 — Testing**: End-to-end integration and hardware failover verification.
 - [ ] **Phase 14 — Deployment**: Vercel & Railway hosting setup.
