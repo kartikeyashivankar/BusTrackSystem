@@ -42,52 +42,62 @@ This guide documents the complete end-to-end production deployment process for t
 
 ---
 
-## 3. Step 2: Backend Deployment on Railway
+## 3. Step 2: Backend Deployment on Render
 
-1. Sign up / log in to [Railway](https://railway.app/).
-2. Click **New Project -> Deploy from GitHub repo** and select `BusTrackSystem`.
-3. In the service settings:
-   - **Root Directory**: Set to `/backend` (or leave at root; Railway will use `railway.json`).
-   - **Build Command**: `npm ci`
+1. Sign up or log in to [Render](https://dashboard.render.com/).
+2. Click **New +** -> **Web Service**.
+3. Connect your GitHub account and select the `BusTrackSystem` repository.
+4. Configure the Web Service settings:
+   - **Name**: `bustrack-backend` (or your choice)
+   - **Region**: Select the region closest to you (e.g., Oregon, Frankfurt, Singapore)
+   - **Branch**: `main` (or your active branch)
+   - **Root Directory**: `backend`
+   - **Runtime**: `Node`
+   - **Build Command**: `npm install`
    - **Start Command**: `node server.js`
-4. Under **Variables**, add the following environment variables:
-   | Variable | Value | Description |
+   - **Instance Type**: `Free`
+5. Under **Environment Variables**, click **Add Environment Variable** for each:
+   | Key | Value | Notes |
    |---|---|---|
-   | `NODE_ENV` | `production` | Production mode flag |
-   | `PORT` | `5000` | Server listening port |
-   | `MONGODB_URI` | `mongodb+srv://...` | Your MongoDB Atlas connection URI |
+   | `NODE_ENV` | `production` | Enables production mode |
+   | `PORT` | `5000` | Render exposes this port via its HTTPS router |
+   | `MONGODB_URI` | `mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/bustrack?retryWrites=true&w=majority` | Your MongoDB Atlas connection URI |
    | `JWT_SECRET` | `bustrack_secure_jwt_token_2026_prod` | Strong secret for token signing |
-   | `CLIENT_URL` | `https://your-frontend.vercel.app` | Vercel domain (comma-separated if multiple) |
-   | `SERIAL_PORT` | `COM3` | Hardware port (simulation activates automatically in cloud) |
-   | `BAUD_RATE` | `115200` | Baud rate frequency |
-5. Under **Settings -> Networking**:
-   - Click **Generate Domain** (e.g. `bustrack-backend-production.up.railway.app`).
-   - Railway automatically provisions an SSL/TLS certificate and supports persistent WebSocket connections (`wss://`).
-6. Run database seed to populate initial 10 fleet vehicles and default users:
-   - Open Railway **Deployments -> View Logs -> Exec**:
+   | `CLIENT_URL` | `https://<your-app-name>.vercel.app` | Your Vercel frontend URL (you can update this after Vercel deploys) |
+   | `SERIAL_PORT` | `COM3` | In cloud environments, graceful simulation mode is auto-activated |
+   | `BAUD_RATE` | `115200` | Hardware baud rate |
+6. Click **Create Web Service**.
+7. Once deployed, copy your Render service URL from the top of the dashboard:
+   - Format: `https://bustrack-backend.onrender.com`
+   - WebSocket URL is the same hostname with `wss://`: `wss://bustrack-backend.onrender.com`
+8. **Seed Database (Initial Fleet & Users)**:
+   - In your Render dashboard, click the **Shell** tab (or run locally pointed to Atlas):
      ```bash
      npm run seed
      ```
+
+*(Alternative: You can also deploy via Railway using `railway.json` if preferred).*
 
 ---
 
 ## 4. Step 3: Frontend Deployment on Vercel
 
 1. Log in to [Vercel](https://vercel.com/).
-2. Click **Add New -> Project** and import the `BusTrackSystem` repository.
+2. Click **Add New...** -> **Project** and import the `BusTrackSystem` repository.
 3. Configure project settings:
    - **Framework Preset**: `Vite`
-   - **Root Directory**: Click Edit and select `frontend` (or leave default if utilizing root `vercel.json`).
+   - **Root Directory**: Click Edit and select `frontend` (or leave default since root `vercel.json` is configured).
    - **Build Command**: `npm run build`
    - **Output Directory**: `dist`
 4. Expand **Environment Variables** and add:
    | Variable | Value | Example |
    |---|---|---|
-   | `VITE_API_URL` | Your Railway HTTPS backend domain | `https://bustrack-backend-production.up.railway.app` |
-   | `VITE_WS_URL` | Your Railway WSS backend domain | `wss://bustrack-backend-production.up.railway.app` |
+   | `VITE_API_URL` | Your Render HTTPS backend domain | `https://bustrack-backend.onrender.com` |
+   | `VITE_WS_URL` | Your Render WSS backend domain | `wss://bustrack-backend.onrender.com` |
 5. Click **Deploy**.
 6. Once deployed, note your public domain (e.g. `https://bustrack-system.vercel.app`).
-7. Update `CLIENT_URL` in Railway variables to match your exact Vercel production domain.
+7. Return to your **Render Dashboard** -> **Environment** and make sure `CLIENT_URL` includes your exact Vercel URL (e.g. `https://bustrack-system.vercel.app`). Render will automatically redeploy with the updated CORS policy.
+
 
 ---
 
