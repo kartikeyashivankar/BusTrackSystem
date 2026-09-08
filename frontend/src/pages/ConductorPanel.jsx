@@ -348,10 +348,19 @@ const ConductorPanel = () => {
               <p className="text-xs text-textSecondary mt-1 leading-relaxed">
                 Bus reached the terminal stop. Complete this loop and start a new loop?
               </p>
-              <div className="mt-3 p-3 bg-gray-900 rounded-btn text-left text-xs font-mono space-y-1">
-                <p className="text-safe">✓ Trip history will be saved to database</p>
-                <p className="text-safe">✓ Passenger count will reset for new loop</p>
-                <p className="text-safe">✓ Loop counter will increment to {loopCount + 1}</p>
+              <div className="mt-3 p-3 bg-gray-900 rounded-btn text-left text-xs font-mono space-y-1.5">
+                <p className="text-safe flex items-center space-x-1.5">
+                  <CheckCircle size={14} className="text-safe shrink-0" />
+                  <span>Trip history will be saved to database</span>
+                </p>
+                <p className="text-safe flex items-center space-x-1.5">
+                  <CheckCircle size={14} className="text-safe shrink-0" />
+                  <span>Passenger count will reset for new loop</span>
+                </p>
+                <p className="text-safe flex items-center space-x-1.5">
+                  <CheckCircle size={14} className="text-safe shrink-0" />
+                  <span>Loop counter will increment to {loopCount + 1}</span>
+                </p>
               </div>
             </div>
 
