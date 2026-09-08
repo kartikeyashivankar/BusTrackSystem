@@ -1,12 +1,12 @@
-// Auth Middleware Skeleton
 const jwt = require('jsonwebtoken');
 
 const protect = async (req, res, next) => {
   let token;
+
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'bustrack_jwt_secret_key_2026_secure');
       req.user = decoded;
       return next();
     } catch (error) {
@@ -15,7 +15,7 @@ const protect = async (req, res, next) => {
   }
 
   if (!token) {
-    return res.status(401).json({ message: 'Not authorized, no token' });
+    return res.status(401).json({ message: 'Not authorized, no token provided' });
   }
 };
 
@@ -26,4 +26,15 @@ const adminOnly = (req, res, next) => {
   return res.status(403).json({ message: 'Access denied: Admin only' });
 };
 
-module.exports = { protect, adminOnly };
+const conductorOnly = (req, res, next) => {
+  if (req.user && (req.user.role === 'conductor' || req.user.role === 'admin')) {
+    return next();
+  }
+  return res.status(403).json({ message: 'Access denied: Conductor only' });
+};
+
+module.exports = {
+  protect,
+  adminOnly,
+  conductorOnly
+};

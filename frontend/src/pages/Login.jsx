@@ -10,7 +10,18 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { user, login } = useAuth();
+
+  // If already authenticated, redirect based on role
+  React.useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/dashboard', { replace: true });
+      } else if (user.role === 'conductor') {
+        navigate(`/conductor/${user.assignedBus || 'MH-40-AA-1111'}`, { replace: true });
+      }
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

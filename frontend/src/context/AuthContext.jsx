@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import api from '../utils/api';
 
 export const AuthContext = createContext(null);
 
@@ -8,16 +9,34 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser && token) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        localStorage.removeItem('user');
+    const initializeAuth = async () => {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
+
+      if (savedToken && savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+          // Validate token with backend
+          const res = await api.get('/auth/me', {
+            headers: { Authorization: `Bearer ${savedToken}` }
+          });
+          if (res.data) {
+            setUser(res.data);
+            localStorage.setItem('user', JSON.stringify(res.data));
+          }
+        } catch (err) {
+          console.warn('Session expired or invalid, logging out', err.message);
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setToken(null);
+          setUser(null);
+        }
       }
-    }
-    setLoading(false);
-  }, [token]);
+      setLoading(false);
+    };
+
+    initializeAuth();
+  }, []);
 
   const login = (userData, authToken) => {
     localStorage.setItem('token', authToken);
