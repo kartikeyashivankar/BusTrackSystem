@@ -1,0 +1,56 @@
+<svg width="200" height="200" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark Navy Background -->
+  <rect width="200" height="200" rx="32" fill="#0a0f1e"/>
+
+  <!-- Route Tracking Line -->
+  <path d="M 72 83 C 72 98 112 104 128 88 C 138 78 142 70 142 60" 
+        stroke="#00f5a0" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="6 4"/>
+
+  <!-- Transit Waypoint Stops -->
+  <circle cx="103" cy="94" r="2.5" fill="#ffffff"/>
+  <circle cx="127" cy="88" r="2.5" fill="#ffffff"/>
+
+  <!-- Location Pin with Dot at the End -->
+  <g transform="translate(142, 48)">
+    <path d="M 0 -16 C -6.6 -16 -12 -10.6 -12 -4 C -12 5 0 16 0 16 C 0 16 12 5 12 -4 C 12 -10.6 6.6 -16 0 -16 Z" 
+          fill="#00f5a0"/>
+    <circle cx="0" cy="-4" r="4.5" fill="#0a0f1e"/>
+    <circle cx="0" cy="-4" r="2.5" fill="#ffffff"/>
+  </g>
+
+  <!-- Bus Shape (Front Transit View) -->
+  <g transform="translate(68, 56)">
+    <!-- Side Mirrors -->
+    <rect x="-26" y="-10" width="3" height="8" rx="1.5" fill="#00f5a0"/>
+    <rect x="23" y="-10" width="3" height="8" rx="1.5" fill="#00f5a0"/>
+
+    <!-- Main Chassis -->
+    <rect x="-22" y="-24" width="44" height="48" rx="9" fill="#00f5a0"/>
+
+    <!-- Digital Destination Display -->
+    <rect x="-14" y="-19.5" width="28" height="4" rx="2" fill="#0a0f1e"/>
+
+    <!-- Panoramic Windshield -->
+    <rect x="-17" y="-11.5" width="34" height="17" rx="4" fill="#0a0f1e"/>
+    <line x1="0" y1="-11.5" x2="0" y2="5.5" stroke="#00f5a0" stroke-width="1.5"/>
+
+    <!-- Bright Headlights -->
+    <circle cx="-12.5" cy="14" r="3" fill="#ffffff"/>
+    <circle cx="12.5" cy="14" r="3" fill="#ffffff"/>
+
+    <!-- Grille Accent Line -->
+    <line x1="-5.5" y1="14" x2="5.5" y2="14" stroke="#0a0f1e" stroke-width="2.5" stroke-linecap="round"/>
+
+    <!-- Wheels / Base Cutout -->
+    <rect x="-17" y="24" width="7" height="4" rx="1.5" fill="#0a0f1e"/>
+    <rect x="10" y="24" width="7" height="4" rx="1.5" fill="#0a0f1e"/>
+  </g>
+
+  <!-- Modern Typography -->
+  <text x="100" y="146" text-anchor="middle" fill="#ffffff" 
+        font-family="system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif" 
+        font-weight="800" font-size="22" letter-spacing="0.5">BusTrack</text>
+  <text x="100" y="168" text-anchor="middle" fill="#ffffff" 
+        font-family="system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif" 
+        font-weight="400" font-size="12" letter-spacing="3" opacity="0.9">System</text>
+</svg>

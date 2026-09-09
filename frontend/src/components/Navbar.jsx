@@ -1,5 +1,5 @@
 import React from 'react';
-import { Bus, Wifi, WifiOff, LogOut, UserCog, Bell, BellOff } from 'lucide-react';
+import { Wifi, WifiOff, LogOut, UserCog, Bell, BellOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 
@@ -10,11 +10,8 @@ const Navbar = () => {
   return (
     <header className="h-16 bg-cardBg border-b border-borderMuted px-6 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center space-x-3">
-        <div className="bg-safe/10 text-safe p-2 rounded-btn">
-          <Bus size={22} strokeWidth={1.5} />
-        </div>
-        <div>
-          <h1 className="text-base font-bold text-white tracking-wide">BusTrack<span className="text-safe">System</span></h1>
+        <img src="/logo.svg" alt="BusTrack System" className="h-10 w-10 rounded-lg object-contain" />
+        <div className="hidden sm:block border-l border-borderMuted pl-3">
           <p className="text-[10px] text-textSecondary uppercase tracking-widest font-mono">Control Center</p>
         </div>
       </div>
