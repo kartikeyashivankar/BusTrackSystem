@@ -59,17 +59,6 @@ initWebSocket(server);
 initSerial();
 
 const PORT = process.env.PORT || 5000;
-
-app.get('/api/seed-now', async (req, res) => {
-  try {
-    const { execSync } = require('child_process');
-    execSync('node seed.js', { cwd: __dirname });
-    res.json({ success: true, message: 'Database seeded successfully!' });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`BusTrack Backend Server running on port ${PORT}`);
 });
