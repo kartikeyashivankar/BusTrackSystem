@@ -2,55 +2,151 @@
   <!-- Dark Navy Background -->
   <rect width="200" height="200" rx="32" fill="#0a0f1e"/>
 
-  <!-- Route Tracking Line -->
-  <path d="M 72 83 C 72 98 112 104 128 88 C 138 78 142 70 142 60" 
-        stroke="#00f5a0" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="6 4"/>
+  <!-- GPS Route Tracking & Telemetry Line -->
+  <path d="M 26 142 C 48 143 72 138 105 136 C 145 133 170 124 186 108" 
+        stroke="#00f5a0" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="5 3.5" opacity="0.65"/>
+  <circle cx="26" cy="142" r="2.2" fill="#00f5a0"/>
+  <!-- Destination Waypoint Pin Dot -->
+  <circle cx="186" cy="108" r="3.2" fill="#00f5a0"/>
+  <circle cx="186" cy="108" r="1.6" fill="#ffffff"/>
 
-  <!-- Transit Waypoint Stops -->
-  <circle cx="103" cy="94" r="2.5" fill="#ffffff"/>
-  <circle cx="127" cy="88" r="2.5" fill="#ffffff"/>
+  <!-- Dynamic Motion Speedlines Behind Coach -->
+  <path d="M 116 122 L 138 122" stroke="#00f5a0" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M 156 116 L 184 112" stroke="#00f5a0" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M 152 122 L 178 118" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" opacity="0.8"/>
 
-  <!-- Location Pin with Dot at the End -->
-  <g transform="translate(142, 48)">
-    <path d="M 0 -16 C -6.6 -16 -12 -10.6 -12 -4 C -12 5 0 16 0 16 C 0 16 12 5 12 -4 C 12 -10.6 6.6 -16 0 -16 Z" 
+  <!-- Angular Ground Shadow -->
+  <path d="M 36 142 L 88 145 L 176 120 L 102 132 Z" fill="#050811" opacity="0.9"/>
+
+  <!-- 3/4 Perspective Coach Bus Artwork -->
+  <g id="bus-artwork" transform="translate(4, 2)">
+    <!-- Main Chassis Lower Body (Clean White) -->
+    <path d="M 42 110 
+             L 84 107 
+             L 102 96 
+             L 162 98 
+             L 162 108 
+             L 152 108 
+             C 152 104 146 102 140 104 C 136 106 135 110 136 116
+             L 107 117 
+             C 105 110 100 108 94 108 C 88 109 85 113 86 120
+             L 81 129 
+             C 72 132 50 131 42 128 
+             L 42 110 Z" 
+          fill="#ffffff"/>
+
+    <!-- Dynamic Aerodynamic Swoop / Body Stripe (#00f5a0) -->
+    <path d="M 42 111 
+             C 57 114 73 112 84 107 
+             L 108 95 
+             L 162 97 
+             L 162 100 
+             L 107 98.5 
+             L 82 111 
+             C 70 115 54 116 42 113.5 Z" 
           fill="#00f5a0"/>
-    <circle cx="0" cy="-4" r="4.5" fill="#0a0f1e"/>
-    <circle cx="0" cy="-4" r="2.5" fill="#ffffff"/>
+
+    <!-- Front Bumper Structure (White) -->
+    <path d="M 42 115 
+             C 56 118 70 116 82 111
+             L 82 127
+             C 71 130 52 129 42 126 Z" 
+          fill="#ffffff"/>
+
+    <!-- Lower Front Grille / Air Intake (Dark) -->
+    <path d="M 50 123 L 73 124 L 71 128 L 51 127 Z" fill="#0a0f1e"/>
+    <!-- Grille Neon Accent Line -->
+    <line x1="54" y1="125.5" x2="69" y2="126" stroke="#00f5a0" stroke-width="1.4" stroke-linecap="round"/>
+
+    <!-- Aggressive Slanted LED Headlights -->
+    <!-- Left Headlight -->
+    <path d="M 43 118 L 49 121 L 45 122.5 Z" fill="#00f5a0"/>
+    <circle cx="46" cy="120" r="0.8" fill="#ffffff"/>
+    <!-- Right Headlight -->
+    <path d="M 69 122 L 80 116 L 75 123 Z" fill="#00f5a0"/>
+    <circle cx="75" cy="119" r="0.8" fill="#ffffff"/>
+
+    <!-- Dark Tinted Glass Cabin -->
+    <path d="M 47 70 
+             C 62 67 76 65 87 64 
+             L 162 73 
+             L 162 95 
+             L 86 89 
+             L 42 108 
+             L 44 80 
+             C 44 74 46 71 47 70 Z" 
+          fill="#0e1726"/>
+
+    <!-- Aerodynamic Roof Cap & Visor (#00f5a0) -->
+    <path d="M 47 69 
+             C 62 65 77 63 89 62 
+             L 162 71 
+             L 162 74.5 
+             L 88 65.5 
+             C 76 66.5 61 68.5 46 72.5 Z" 
+          fill="#00f5a0"/>
+
+    <!-- Windshield Distinctive Glare / Curve (White highlight from ref image) -->
+    <path d="M 50 74 
+             C 64 71 73 74 81 80 
+             L 81 85 
+             C 72 79 62 76 49 79 Z" 
+          fill="#ffffff" opacity="0.3"/>
+
+    <!-- 5 Touring Passenger Windows with Mullions -->
+    <rect x="106" y="68" width="3.5" height="23" fill="#0a0f1e" transform="skewX(-4)"/>
+    <rect x="121" y="69.5" width="3.5" height="23" fill="#0a0f1e" transform="skewX(-4)"/>
+    <rect x="136" y="71" width="3.5" height="22" fill="#0a0f1e" transform="skewX(-4)"/>
+    <rect x="151" y="72.5" width="3.5" height="21" fill="#0a0f1e" transform="skewX(-4)"/>
+
+    <!-- Side Window Top Accent Line -->
+    <line x1="88" y1="66" x2="162" y2="74" stroke="#00f5a0" stroke-width="1.2" opacity="0.6"/>
+
+    <!-- Front Center A-Pillar (White) -->
+    <path d="M 85 64 L 88 64 L 84 107 L 81 107 Z" fill="#ffffff"/>
+
+    <!-- Left Rearview Mirror (Hanging Swept Arm from reference) -->
+    <path d="M 47 71 
+             C 38 72 32 77 32 87 
+             L 32 96 
+             C 32 99 35 102 38 102 
+             C 40 102 41 99 41 95 
+             L 41 87 
+             C 41 81 45 78 49 77 Z" 
+          fill="#ffffff"/>
+    <rect x="33" y="87" width="7" height="9" rx="1.5" fill="#00f5a0"/>
+
+    <!-- Right Rearview Mirror (Over door) -->
+    <path d="M 88 68 
+             C 92 68 94 72 94 79 
+             L 94 87 
+             C 94 90 92 91 90 91 
+             C 88 91 87 89 87 86 
+             L 87 79 
+             C 87 74 86 71 85 70 Z" 
+          fill="#ffffff"/>
+    <rect x="88" y="79" width="5" height="7" rx="1" fill="#00f5a0"/>
+
+    <!-- Front 3/4 Wheel -->
+    <g transform="translate(95, 120)">
+      <ellipse cx="0" cy="0" rx="8" ry="10.5" fill="#0a0f1e"/>
+      <ellipse cx="0" cy="0" rx="5.2" ry="7.2" fill="#00f5a0"/>
+      <ellipse cx="0" cy="0" rx="3" ry="4.5" fill="#ffffff"/>
+    </g>
+
+    <!-- Rear 3/4 Wheel -->
+    <g transform="translate(144, 112)">
+      <ellipse cx="0" cy="0" rx="4.8" ry="7.2" fill="#0a0f1e"/>
+      <ellipse cx="0" cy="0" rx="3" ry="4.8" fill="#00f5a0"/>
+      <ellipse cx="0" cy="0" rx="1.8" ry="3" fill="#ffffff"/>
+    </g>
   </g>
 
-  <!-- Bus Shape (Front Transit View) -->
-  <g transform="translate(68, 56)">
-    <!-- Side Mirrors -->
-    <rect x="-26" y="-10" width="3" height="8" rx="1.5" fill="#00f5a0"/>
-    <rect x="23" y="-10" width="3" height="8" rx="1.5" fill="#00f5a0"/>
-
-    <!-- Main Chassis -->
-    <rect x="-22" y="-24" width="44" height="48" rx="9" fill="#00f5a0"/>
-
-    <!-- Digital Destination Display -->
-    <rect x="-14" y="-19.5" width="28" height="4" rx="2" fill="#0a0f1e"/>
-
-    <!-- Panoramic Windshield -->
-    <rect x="-17" y="-11.5" width="34" height="17" rx="4" fill="#0a0f1e"/>
-    <line x1="0" y1="-11.5" x2="0" y2="5.5" stroke="#00f5a0" stroke-width="1.5"/>
-
-    <!-- Bright Headlights -->
-    <circle cx="-12.5" cy="14" r="3" fill="#ffffff"/>
-    <circle cx="12.5" cy="14" r="3" fill="#ffffff"/>
-
-    <!-- Grille Accent Line -->
-    <line x1="-5.5" y1="14" x2="5.5" y2="14" stroke="#0a0f1e" stroke-width="2.5" stroke-linecap="round"/>
-
-    <!-- Wheels / Base Cutout -->
-    <rect x="-17" y="24" width="7" height="4" rx="1.5" fill="#0a0f1e"/>
-    <rect x="10" y="24" width="7" height="4" rx="1.5" fill="#0a0f1e"/>
-  </g>
-
-  <!-- Modern Typography -->
-  <text x="100" y="146" text-anchor="middle" fill="#ffffff" 
+  <!-- Typography -->
+  <text x="100" y="166" text-anchor="middle" fill="#ffffff" 
         font-family="system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif" 
         font-weight="800" font-size="22" letter-spacing="0.5">BusTrack</text>
-  <text x="100" y="168" text-anchor="middle" fill="#ffffff" 
+  <text x="100" y="184" text-anchor="middle" fill="#00f5a0" 
         font-family="system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif" 
-        font-weight="400" font-size="12" letter-spacing="3" opacity="0.9">System</text>
+        font-weight="600" font-size="11.5" letter-spacing="4">SYSTEM</text>
 </svg>
