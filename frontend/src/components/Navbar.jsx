@@ -10,9 +10,12 @@ const Navbar = () => {
   return (
     <header className="h-16 bg-cardBg border-b border-borderMuted px-6 flex items-center justify-between sticky top-0 z-30">
       <div className="flex items-center space-x-3">
-        <img src="/logo.svg" alt="BusTrack System" className="h-11 w-11 rounded-lg object-contain" />
-        <div className="hidden sm:block border-l border-borderMuted pl-3">
-          <p className="text-[10px] text-textSecondary uppercase tracking-widest font-mono">Control Center</p>
+        <img src="/logo.svg" alt="BusTrack System" className="h-10 w-10 rounded-lg object-contain shadow-glowSafe/20" />
+        <div className="flex flex-col">
+          <span className="font-bold text-base text-white tracking-wide leading-none flex items-center">
+            BusTrack<span className="text-safe">System</span>
+          </span>
+          <p className="text-[10px] text-textSecondary uppercase tracking-widest font-mono mt-0.5">Control Center</p>
         </div>
       </div>
 

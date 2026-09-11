@@ -51,9 +51,7 @@ const Login = () => {
     <div className="min-h-screen bg-darkBg flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-cardBg border border-borderMuted rounded-card p-8 shadow-2xl">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-safe/10 text-safe p-3 rounded-btn mb-3">
-            <Bus size={32} strokeWidth={1.5} />
-          </div>
+          <img src="/logo.svg" alt="BusTrack System" className="h-16 w-16 rounded-2xl mb-3 shadow-glowSafe/30 object-contain" />
           <h1 className="text-2xl font-bold text-white tracking-wide">BusTrack<span className="text-safe">System</span></h1>
           <p className="text-xs text-textSecondary uppercase tracking-widest font-mono mt-1">
             Real-Time Transit Control

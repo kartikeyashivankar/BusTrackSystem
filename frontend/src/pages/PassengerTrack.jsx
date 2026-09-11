@@ -132,8 +132,8 @@ const PassengerTrack = () => {
         
         {/* Header Branding */}
         <header className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-safe/10 text-safe border border-safe/20 shadow-glowSafe">
-            <Bus size={32} strokeWidth={1.5} />
+          <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-cardBg border border-borderMuted shadow-glowSafe/20">
+            <img src="/logo.svg" alt="BusTrack System" className="h-12 w-12 rounded-xl object-contain" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             BusTrack <span className="text-safe">Public View</span>
