@@ -1,8 +1,9 @@
-import React from 'react';
-import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
+import SplashScreen from './components/SplashScreen';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import BusDetail from './pages/BusDetail';
@@ -40,8 +41,34 @@ const ConductorLayout = () => {
 };
 
 function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    return !sessionStorage.getItem('splashShown');
+  });
+  const navigate = useNavigate();
+  const splashHandled = useRef(false);
+
+  const handleSplashComplete = () => {
+    if (splashHandled.current) return;
+    splashHandled.current = true;
+    setTimeout(() => {
+      sessionStorage.setItem('splashShown', 'true');
+      setShowSplash(false);
+      navigate('/');
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (!showSplash) return;
+    const fallbackTimer = setTimeout(() => {
+      handleSplashComplete();
+    }, 2500);
+    return () => clearTimeout(fallbackTimer);
+  }, [showSplash]);
+
   return (
-    <Routes>
+    <>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+      <Routes>
       {/* Public Pages */}
       <Route path="/" element={<Login />} />
       <Route path="/track" element={<PassengerTrack />} />
@@ -65,6 +92,7 @@ function App() {
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   );
 }
 
