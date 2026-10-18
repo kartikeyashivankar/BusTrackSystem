@@ -55,10 +55,11 @@ export default function SplashScreen({ onComplete }) {
           delay={0.3}
           className='text-white'
           style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize: '2rem',
-            fontWeight: 700,
-            letterSpacing: '0.02em',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+            fontSize: '2.2rem',
+            fontWeight: 800,
+            letterSpacing: '-0.02em',
+            color: '#ffffff',
           }}
           onAnimationComplete={onComplete}
         >
@@ -70,11 +71,11 @@ export default function SplashScreen({ onComplete }) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.8, duration: 0.6 }}
           style={{
-            color: '#00f5a0',
             fontFamily: "'Inter', sans-serif",
-            fontSize: '0.75rem',
-            letterSpacing: '0.2em',
-            fontWeight: 400,
+            fontSize: '0.7rem',
+            letterSpacing: '0.25em',
+            fontWeight: 500,
+            color: '#00f5a0',
             textTransform: 'uppercase',
           }}
         >

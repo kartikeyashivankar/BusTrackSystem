@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -44,54 +44,50 @@ function App() {
   const [showSplash, setShowSplash] = useState(() => {
     return !sessionStorage.getItem('splashShown');
   });
-  const navigate = useNavigate();
-  const splashHandled = useRef(false);
-
-  const handleSplashComplete = () => {
-    if (splashHandled.current) return;
-    splashHandled.current = true;
-    setTimeout(() => {
-      sessionStorage.setItem('splashShown', 'true');
-      setShowSplash(false);
-      navigate('/');
-    }, 500);
-  };
 
   useEffect(() => {
     if (!showSplash) return;
     const fallbackTimer = setTimeout(() => {
-      handleSplashComplete();
-    }, 2500);
+      sessionStorage.setItem('splashShown', 'true');
+      setShowSplash(false);
+    }, 3000);
     return () => clearTimeout(fallbackTimer);
   }, [showSplash]);
 
   return (
     <>
-      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      <Routes>
-      {/* Public Pages */}
-      <Route path="/" element={<Login />} />
-      <Route path="/track" element={<PassengerTrack />} />
-      <Route path="/track/:busNumber" element={<PassengerTrack />} />
+      {showSplash && (
+        <SplashScreen onComplete={() => {
+          sessionStorage.setItem('splashShown', 'true');
+          setShowSplash(false);
+        }} />
+      )}
+      {!showSplash && (
+        <Routes>
+          {/* Public Pages */}
+          <Route path="/" element={<Login />} />
+          <Route path="/track" element={<PassengerTrack />} />
+          <Route path="/track/:busNumber" element={<PassengerTrack />} />
 
-      {/* Admin Protected Pages */}
-      <Route element={<AdminLayout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/bus/:busNumber" element={<BusDetail />} />
-        <Route path="/routes/:busNumber" element={<RouteEditor />} />
-        <Route path="/history" element={<TripHistory />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/settings" element={<Settings />} />
-      </Route>
+          {/* Admin Protected Pages */}
+          <Route element={<AdminLayout />}>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/bus/:busNumber" element={<BusDetail />} />
+            <Route path="/routes/:busNumber" element={<RouteEditor />} />
+            <Route path="/history" element={<TripHistory />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/settings" element={<Settings />} />
+          </Route>
 
-      {/* Conductor Protected Page */}
-      <Route element={<ConductorLayout />}>
-        <Route path="/conductor/:busNumber" element={<ConductorPanel />} />
-      </Route>
+          {/* Conductor Protected Page */}
+          <Route element={<ConductorLayout />}>
+            <Route path="/conductor/:busNumber" element={<ConductorPanel />} />
+          </Route>
 
-      {/* Fallback */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+          {/* Fallback */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      )}
     </>
   );
 }
