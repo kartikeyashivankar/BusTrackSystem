@@ -8,14 +8,21 @@ let parser = null;
 let isConnected = false;
 let reconnectTimer = null;
 
-const TARGET_BUS = process.env.HARDWARE_BUS || 'MH-40-AA-1111';
+let currentTargetBus = process.env.HARDWARE_BUS || 'MH-40-AA-1111';
 
 // Updates the hardware connection status in database and broadcasts live state
+// Only the currently monitored targetBus gets isHardwareConnected: true (when connected), all other buses remain offline
 const setHardwareStatus = async (connected) => {
   isConnected = connected;
   try {
+    // Keep all non-monitored buses offline
+    await Bus.updateMany(
+      { busNumber: { $ne: currentTargetBus } },
+      { $set: { isHardwareConnected: false } }
+    );
+
     const updatedBus = await Bus.findOneAndUpdate(
-      { busNumber: TARGET_BUS },
+      { busNumber: currentTargetBus },
       { $set: { isHardwareConnected: connected } },
       { new: true }
     );
@@ -24,8 +31,15 @@ const setHardwareStatus = async (connected) => {
       type: 'HARDWARE_STATUS',
       connected,
       port: process.env.SERIAL_PORT || 'COM3',
-      busNumber: TARGET_BUS,
+      busNumber: currentTargetBus,
+      targetBus: currentTargetBus,
       data: updatedBus
+    });
+
+    const allBuses = await Bus.find({});
+    broadcast({
+      type: 'FLEET_UPDATE',
+      data: allBuses
     });
 
     if (updatedBus) {
@@ -36,6 +50,65 @@ const setHardwareStatus = async (connected) => {
   }
 };
 
+// Dynamically change which bus is being actively monitored by the hardware
+const setTargetBus = async (busNumber) => {
+  try {
+    const bus = await Bus.findOne({ busNumber });
+    if (!bus) return null;
+
+    currentTargetBus = busNumber;
+    console.log(`[Hardware Router]: Switched active telemetry target to bus ${currentTargetBus}`);
+
+    // Update DB: only the target bus gets isHardwareConnected = isConnected
+    await Bus.updateMany(
+      { busNumber: { $ne: currentTargetBus } },
+      { $set: { isHardwareConnected: false } }
+    );
+
+    const updatedBus = await Bus.findOneAndUpdate(
+      { busNumber: currentTargetBus },
+      { $set: { isHardwareConnected: isConnected } },
+      { new: true }
+    );
+
+    broadcast({
+      type: 'HARDWARE_STATUS',
+      connected: isConnected,
+      port: process.env.SERIAL_PORT || 'COM3',
+      busNumber: currentTargetBus,
+      targetBus: currentTargetBus,
+      data: updatedBus
+    });
+
+    const allBuses = await Bus.find({});
+    broadcast({
+      type: 'FLEET_UPDATE',
+      data: allBuses
+    });
+
+    if (updatedBus) {
+      broadcast({ type: 'BUS_UPDATE', data: updatedBus });
+    }
+
+    return updatedBus;
+  } catch (err) {
+    console.error('Error switching target bus:', err.message);
+    return null;
+  }
+};
+
+// Send RESET command to physical hardware via Serial if connected
+const sendHardwareReset = (busNumber) => {
+  if (port && port.isOpen && (!busNumber || busNumber === currentTargetBus)) {
+    try {
+      port.write('RESET\n');
+      console.log(`[SerialPort]: Dispatched RESET command to hardware for bus ${busNumber || currentTargetBus}`);
+    } catch (e) {
+      console.warn('Failed to write RESET to serial port:', e.message);
+    }
+  }
+};
+
 // Process sensor events (IR1 -> IR2 = ENTRY, IR2 -> IR1 = EXIT, RESET = count reset)
 const processHardwareMessage = async (rawMessage) => {
   if (!rawMessage) return null;
@@ -43,7 +116,7 @@ const processHardwareMessage = async (rawMessage) => {
   console.log(`[ESP32 Hardware Telemetry]: "${line}"`);
 
   let eventType = null;
-  let busNumber = TARGET_BUS;
+  let busNumber = currentTargetBus;
 
   // 1. JSON format: {"event":"ENTRY","bus":"MH-40-AA-1111"}
   if (line.startsWith('{') && line.endsWith('}')) {
@@ -98,6 +171,8 @@ const processHardwareMessage = async (rawMessage) => {
     } else if (eventType === 'RESET') {
       // Count reset
       bus.currentCount = 0;
+      bus.totalIn = 0;
+      bus.totalOut = 0;
     }
 
     bus.isHardwareConnected = true;
@@ -145,7 +220,7 @@ const connectSerialPort = () => {
 
     port.open((err) => {
       if (err) {
-        console.log(`[SerialPort]: Cannot open ${serialPortName}: ${err.message}. Hardware offline — simulation mode active.`);
+        console.log(`[SerialPort]: Cannot open ${serialPortName}: ${err.message}. Hardware offline.`);
         setHardwareStatus(false);
         scheduleReconnect();
         return;
@@ -171,7 +246,7 @@ const connectSerialPort = () => {
       scheduleReconnect();
     });
   } catch (error) {
-    console.warn(`[SerialPort Init]: ${error.message}. Telemetry simulation active.`);
+    console.warn(`[SerialPort Init]: ${error.message}.`);
     setHardwareStatus(false);
     scheduleReconnect();
   }
@@ -185,7 +260,16 @@ const scheduleReconnect = () => {
   }, 5000);
 };
 
-const initSerial = () => {
+const initSerial = async () => {
+  try {
+    // Initial cleanup: ensure only target bus is connected if port connects, others offline
+    await Bus.updateMany(
+      { busNumber: { $ne: currentTargetBus } },
+      { $set: { isHardwareConnected: false } }
+    );
+  } catch (e) {
+    console.warn('Initial fleet sync warning:', e.message);
+  }
   connectSerialPort();
 };
 
@@ -194,7 +278,8 @@ const getHardwareStatus = () => {
     isConnected,
     port: process.env.SERIAL_PORT || 'COM3',
     baudRate: parseInt(process.env.BAUD_RATE || '115200', 10),
-    targetBus: TARGET_BUS
+    targetBus: currentTargetBus,
+    busNumber: currentTargetBus
   };
 };
 
@@ -202,5 +287,7 @@ module.exports = {
   initSerial,
   processHardwareMessage,
   getHardwareStatus,
-  setHardwareStatus
+  setHardwareStatus,
+  setTargetBus,
+  sendHardwareReset
 };

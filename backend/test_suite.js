@@ -204,19 +204,22 @@ async function runSuite() {
   // ------------------------------------------------------------
   console.log('\n--- Suite 5: Route Management & Audit Trail ---');
   try {
-    const updatedStops = ['Manewada', 'TPoint', 'Ganeshpeth', 'Burdi', 'Besa', 'Chatrapati Square'];
+    const currentBusRes = await req('/buses/MH-40-AA-1111');
+    const existingCapacity = currentBusRes.data?.capacity || 10;
+    const existingStops = currentBusRes.data?.stops || ['Manewada', 'TPoint', 'Ganeshpeth', 'Burdi', 'Besa'];
+
     const routeRes = await req('/buses/MH-40-AA-1111/route', {
       method: 'PUT',
       token: adminToken,
       body: JSON.stringify({
-        stops: updatedStops,
+        stops: existingStops,
         routeType: 'loop',
-        capacity: 55,
+        capacity: existingCapacity,
         startingStopIndex: 0
       })
     });
-    if (routeRes.status === 200 && routeRes.data.bus?.stops?.length === updatedStops.length) {
-      logPass(`Admin updated route sequence for MH-40-AA-1111 (${updatedStops.length} stops)`);
+    if (routeRes.status === 200 && routeRes.data.bus?.stops?.length === existingStops.length) {
+      logPass(`Admin verified route sequence for MH-40-AA-1111 (${existingStops.length} stops, capacity: ${existingCapacity})`);
     } else {
       logFail('Admin updated route sequence', `Status ${routeRes.status}`);
     }

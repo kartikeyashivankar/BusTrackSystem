@@ -3,7 +3,7 @@ import { Bus, Navigation, Repeat } from 'lucide-react';
 import StatusDot from './StatusDot';
 import RouteProgress from './RouteProgress';
 
-const BusCard = ({ bus, onClick }) => {
+const BusCard = ({ bus, onClick, isMonitored = false }) => {
   if (!bus) return null;
 
   const {
@@ -34,20 +34,35 @@ const BusCard = ({ bus, onClick }) => {
   return (
     <div
       onClick={onClick}
-      className={`bg-cardBg border border-borderMuted rounded-card p-5 cursor-pointer transition-all duration-200 hover:border-gray-600 ${
-        isDanger ? 'shadow-glowDanger border-danger/30' : isWarning ? 'shadow-glowWarning border-warning/30' : 'shadow-glowSafe border-safe/20'
+      className={`bg-cardBg border rounded-card p-5 cursor-pointer transition-all duration-200 hover:border-gray-500 relative ${
+        isMonitored && isHardwareConnected
+          ? 'ring-1 ring-safe/50 border-safe/40 shadow-glowSafe/20'
+          : isDanger
+          ? 'shadow-glowDanger border-danger/30'
+          : isWarning
+          ? 'shadow-glowWarning border-warning/30'
+          : 'border-borderMuted'
       }`}
     >
       {/* Card Header */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center space-x-2">
-          <Bus size={20} className={isDanger ? 'text-danger' : isWarning ? 'text-warning' : 'text-safe'} strokeWidth={1.5} />
+          <Bus size={20} className={isDanger ? 'text-danger' : isWarning ? 'text-warning' : isHardwareConnected ? 'text-safe' : 'text-textTertiary'} strokeWidth={1.5} />
           <span className="font-mono text-lg font-bold text-white tracking-wide">{busNumber}</span>
+          {isMonitored && (
+            <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+              isHardwareConnected
+                ? 'bg-safe/15 text-safe border-safe/40 shadow-glowSafe/20'
+                : 'bg-gray-800 text-textSecondary border-borderMuted'
+            }`}>
+              MONITORED
+            </span>
+          )}
         </div>
         <div className="flex items-center space-x-2">
           <StatusDot status={dotStatus} />
           <span className="text-xs font-mono uppercase tracking-wider text-textSecondary">
-            {isDanger ? 'FULL' : isWarning ? 'CROWDED' : isHardwareConnected ? 'NORMAL' : 'OFFLINE'}
+            {isDanger ? 'FULL' : isWarning ? 'CROWDED' : isHardwareConnected ? 'ONLINE' : 'OFFLINE'}
           </span>
         </div>
       </div>

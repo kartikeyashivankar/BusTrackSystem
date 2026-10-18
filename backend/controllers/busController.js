@@ -2,6 +2,7 @@ const Bus = require('../models/Bus');
 const Trip = require('../models/Trip');
 const RouteChange = require('../models/RouteChange');
 const { broadcast } = require('../websocket');
+const { sendHardwareReset } = require('../serialHandler');
 
 // GET /api/buses - Return all buses
 exports.getAllBuses = async (req, res) => {
@@ -134,9 +135,14 @@ exports.completeLoop = async (req, res) => {
     bus.currentStopIndex = bus.startingStopIndex || 0;
     bus.currentStop = bus.stops?.[bus.currentStopIndex] || '';
     bus.currentCount = 0; // Reset count at end of loop as per PRD
+    bus.totalIn = 0;
+    bus.totalOut = 0;
     bus.status = 'ON_THE_WAY';
 
     await bus.save();
+
+    // If this bus is the active hardware target, dispatch RESET command to serial hardware
+    sendHardwareReset(bus.busNumber);
 
     broadcast({ type: 'BUS_UPDATE', data: bus });
     broadcast({ type: 'LOOP_COMPLETED', data: { bus, trip } });
@@ -152,7 +158,7 @@ exports.completeLoop = async (req, res) => {
   }
 };
 
-// PUT /api/buses/:busNumber/reset - Conductor manually resets count
+// PUT /api/buses/:busNumber/reset - Manually resets count (Admin / Conductor)
 exports.resetCount = async (req, res) => {
   try {
     const bus = await Bus.findOne({ busNumber: req.params.busNumber });
@@ -161,7 +167,12 @@ exports.resetCount = async (req, res) => {
     }
 
     bus.currentCount = 0;
+    bus.totalIn = 0;
+    bus.totalOut = 0;
     await bus.save();
+
+    // If this bus is the active hardware target, dispatch RESET command to serial hardware
+    sendHardwareReset(bus.busNumber);
 
     broadcast({ type: 'BUS_UPDATE', data: bus });
     res.status(200).json({ message: 'Passenger count reset', bus });

@@ -55,6 +55,10 @@ const busSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  conductorName: {
+    type: String,
+    default: 'Conductor'
+  },
   createdAt: {
     type: Date,
     default: Date.now

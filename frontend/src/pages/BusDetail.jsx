@@ -11,7 +11,8 @@ import {
   Sliders,
   AlertTriangle,
   Radio,
-  CheckCircle
+  CheckCircle,
+  RotateCcw
 } from 'lucide-react';
 import PassengerGauge from '../components/PassengerGauge';
 import EventFeed from '../components/EventFeed';
@@ -29,6 +30,7 @@ const BusDetail = () => {
   const [trips, setTrips] = useState([]);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resetting, setResetting] = useState(false);
   const [error, setError] = useState('');
   const prevCountRef = useRef(null);
 
@@ -85,6 +87,28 @@ const BusDetail = () => {
     };
   }, [busNumber]);
 
+  const handleResetCount = async () => {
+    if (!window.confirm(`Reset passenger count for ${busNumber} to 0?`)) return;
+    try {
+      setResetting(true);
+      const res = await api.put(`/buses/${busNumber}/reset`);
+      if (res.data?.bus) {
+        setBus((prev) => ({ ...prev, ...res.data.bus }));
+        prevCountRef.current = 0;
+        const newEvent = {
+          type: 'RESET',
+          time: new Date().toLocaleTimeString()
+        };
+        setEvents((prev) => [newEvent, ...prev].slice(0, 50));
+      }
+    } catch (err) {
+      console.error('Error resetting passenger count:', err);
+      alert(err.response?.data?.message || 'Failed to reset passenger count');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   // Live WebSocket telemetry listener
   useEffect(() => {
     if (!lastMessage) return;
@@ -101,7 +125,11 @@ const BusDetail = () => {
       const prevCount = prevCountRef.current;
 
       if (prevCount !== null && newCount !== undefined && newCount !== prevCount) {
-        const eventType = newCount > prevCount ? 'ENTRY' : 'EXIT';
+        const eventType = newCount === 0 && lastMessage.event === 'RESET'
+          ? 'RESET'
+          : newCount > prevCount
+          ? 'ENTRY'
+          : 'EXIT';
         const newEvent = {
           type: eventType,
           time: new Date().toLocaleTimeString()
@@ -115,6 +143,12 @@ const BusDetail = () => {
         ...prev,
         ...updatedData
       }));
+    } else if (lastMessage.type === 'HARDWARE_STATUS') {
+      const isTarget = (lastMessage.busNumber === busNumber || lastMessage.targetBus === busNumber);
+      setBus((prev) => prev ? {
+        ...prev,
+        isHardwareConnected: isTarget && !!lastMessage.connected
+      } : prev);
     }
   }, [lastMessage, busNumber]);
 
@@ -207,14 +241,54 @@ const BusDetail = () => {
           </div>
         </div>
 
-        {/* Quick Action: Route Config Link */}
-        <button
-          onClick={() => navigate(`/routes/${bus.busNumber}`)}
-          className="bg-gray-900 border border-borderMuted hover:border-gray-600 text-textSecondary hover:text-white px-4 py-2 rounded-btn text-xs font-mono flex items-center space-x-2 transition"
-        >
-          <Sliders size={16} strokeWidth={1.5} />
-          <span>Configure Route</span>
-        </button>
+        {/* Top Actions: Reset Count & Route Config */}
+        <div className="flex items-center space-x-2.5">
+          <button
+            onClick={handleResetCount}
+            disabled={resetting}
+            className="bg-danger/10 border border-danger/30 hover:bg-danger/20 text-danger px-3.5 py-2 rounded-btn text-xs font-mono flex items-center space-x-1.5 transition disabled:opacity-50"
+            title="Reset Passenger Count for this Bus"
+          >
+            <RotateCcw size={15} strokeWidth={1.5} className={resetting ? 'animate-spin' : ''} />
+            <span>{resetting ? 'Resetting...' : 'Reset Count'}</span>
+          </button>
+
+          <button
+            onClick={() => navigate(`/routes/${bus.busNumber}`)}
+            className="bg-gray-900 border border-borderMuted hover:border-gray-600 text-textSecondary hover:text-white px-4 py-2 rounded-btn text-xs font-mono flex items-center space-x-2 transition"
+          >
+            <Sliders size={16} strokeWidth={1.5} />
+            <span>Configure Route</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Active Hardware Monitoring Link Banner */}
+      <div className={`p-3.5 rounded-card border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono transition-all ${
+        isHardwareConnected
+          ? 'bg-safe/10 border-safe/30 text-safe shadow-glowSafe/20'
+          : 'bg-cardBg border-borderMuted text-textSecondary'
+      }`}>
+        <div className="flex items-center space-x-2.5">
+          <span className={`h-2.5 w-2.5 rounded-full ${isHardwareConnected ? 'bg-safe animate-pulse' : 'bg-danger'}`} />
+          <span className="font-bold text-white uppercase">
+            {isHardwareConnected ? 'Physical Hardware Connected' : 'Hardware Offline / Disconnected'}
+          </span>
+          <span className="text-textSecondary hidden md:inline">
+            {isHardwareConnected
+              ? `— Live IR sensors & LCD linked to ${bus.busNumber}`
+              : '— Connect USB cable to laptop to stream physical sensor events'}
+          </span>
+        </div>
+
+        <div className="flex items-center space-x-2 text-[11px]">
+          <span className="text-textTertiary uppercase">Monitored Target:</span>
+          <span className={`px-2 py-0.5 rounded font-bold ${
+            isHardwareConnected ? 'bg-safe text-darkBg' : 'bg-gray-800 text-textSecondary'
+          }`}>
+            {bus.busNumber}
+          </span>
+        </div>
       </div>
 
       {/* Main Real-Time Telemetry Grid */}

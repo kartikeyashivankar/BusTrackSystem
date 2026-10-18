@@ -1,5 +1,4 @@
-import React from 'react';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { ArrowUp, ArrowDown, RotateCcw } from 'lucide-react';
 
 const EventFeed = ({ events = [] }) => {
   if (!events || events.length === 0) {
@@ -19,13 +18,21 @@ const EventFeed = ({ events = [] }) => {
               <div className="p-1 rounded bg-safe/10 text-safe">
                 <ArrowUp size={16} strokeWidth={1.5} />
               </div>
+            ) : event.type === 'RESET' ? (
+              <div className="p-1 rounded bg-warning/10 text-warning">
+                <RotateCcw size={16} strokeWidth={1.5} />
+              </div>
             ) : (
               <div className="p-1 rounded bg-danger/10 text-danger">
                 <ArrowDown size={16} strokeWidth={1.5} />
               </div>
             )}
             <span className="text-textPrimary font-medium">
-              {event.type === 'ENTRY' ? 'Passenger Entered' : 'Passenger Exited'}
+              {event.type === 'ENTRY'
+                ? 'Passenger Entered'
+                : event.type === 'RESET'
+                ? 'Count Reset to 0'
+                : 'Passenger Exited'}
             </span>
           </div>
           <span className="font-mono text-textSecondary text-[11px]">

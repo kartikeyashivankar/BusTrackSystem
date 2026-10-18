@@ -39,6 +39,69 @@ const seedData = async () => {
         password: conductorPassword,
         role: 'conductor',
         assignedBus: 'MH-40-AA-1111'
+      },
+      {
+        name: 'Conductor Suresh',
+        email: 'conductor2@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-2222'
+      },
+      {
+        name: 'Conductor Amit',
+        email: 'conductor3@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-3333'
+      },
+      {
+        name: 'Conductor Ramesh',
+        email: 'conductor4@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-4444'
+      },
+      {
+        name: 'Conductor Dinesh',
+        email: 'conductor5@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-5555'
+      },
+      {
+        name: 'Conductor Manoj',
+        email: 'conductor6@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-6666'
+      },
+      {
+        name: 'Conductor Ganesh',
+        email: 'conductor7@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-7777'
+      },
+      {
+        name: 'Conductor Vijay',
+        email: 'conductor8@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-8888'
+      },
+      {
+        name: 'Conductor Sunil',
+        email: 'conductor9@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-9999'
+      },
+      {
+        name: 'Conductor Anand',
+        email: 'conductor10@bustrack.com',
+        password: conductorPassword,
+        role: 'conductor',
+        assignedBus: 'MH-40-AA-1010'
       }
     ];
 
@@ -49,7 +112,7 @@ const seedData = async () => {
     const buses = [
       {
         busNumber: 'MH-40-AA-1111',
-        capacity: 45,
+        capacity: 10,
         routeType: 'loop',
         stops: ['Manewada', 'TPoint', 'Ganeshpeth', 'Burdi', 'Besa'],
         currentStopIndex: 2,
@@ -60,7 +123,8 @@ const seedData = async () => {
         totalOut: 16,
         loopCount: 2,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: true,
+        conductorName: 'Conductor Rajesh'
       },
       {
         busNumber: 'MH-40-AA-2222',
@@ -75,7 +139,8 @@ const seedData = async () => {
         totalOut: 7,
         loopCount: 1,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Suresh'
       },
       {
         busNumber: 'MH-40-AA-3333',
@@ -90,7 +155,8 @@ const seedData = async () => {
         totalOut: 15,
         loopCount: 3,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Amit'
       },
       {
         busNumber: 'MH-40-AA-4444',
@@ -105,7 +171,8 @@ const seedData = async () => {
         totalOut: 34,
         loopCount: 1,
         status: 'END_OF_ROUTE',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Ramesh'
       },
       {
         busNumber: 'MH-40-AA-5555',
@@ -120,7 +187,8 @@ const seedData = async () => {
         totalOut: 0,
         loopCount: 1,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Dinesh'
       },
       {
         busNumber: 'MH-40-AA-6666',
@@ -135,7 +203,8 @@ const seedData = async () => {
         totalOut: 8,
         loopCount: 2,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Manoj'
       },
       {
         busNumber: 'MH-40-AA-7777',
@@ -150,7 +219,8 @@ const seedData = async () => {
         totalOut: 17,
         loopCount: 2,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Ganesh'
       },
       {
         busNumber: 'MH-40-AA-8888',
@@ -165,7 +235,8 @@ const seedData = async () => {
         totalOut: 0,
         loopCount: 0,
         status: 'OFFLINE',
-        isHardwareConnected: false
+        isHardwareConnected: false,
+        conductorName: 'Conductor Vijay'
       },
       {
         busNumber: 'MH-40-AA-9999',
@@ -180,7 +251,8 @@ const seedData = async () => {
         totalOut: 6,
         loopCount: 1,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Sunil'
       },
       {
         busNumber: 'MH-40-AA-1010',
@@ -195,7 +267,8 @@ const seedData = async () => {
         totalOut: 24,
         loopCount: 3,
         status: 'ON_THE_WAY',
-        isHardwareConnected: true
+        isHardwareConnected: false,
+        conductorName: 'Conductor Anand'
       }
     ];
 

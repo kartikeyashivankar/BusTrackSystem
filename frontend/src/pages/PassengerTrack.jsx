@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import api from '../utils/api';
+import { useWebSocket } from '../hooks/useWebSocket';
 
 const FLEET_BUSES = [
   'MH-40-AA-1111',
@@ -35,6 +36,7 @@ const FLEET_BUSES = [
 const PassengerTrack = () => {
   const { busNumber: routeBusNumber } = useParams();
   const navigate = useNavigate();
+  const { lastMessage } = useWebSocket();
 
   const [searchQuery, setSearchQuery] = useState(routeBusNumber || 'MH-40-AA-1111');
   const [activeBus, setActiveBus] = useState(routeBusNumber || 'MH-40-AA-1111');
@@ -46,6 +48,82 @@ const PassengerTrack = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const countdownRef = useRef(null);
+
+  // Real-time synchronization for passenger tracking
+  useEffect(() => {
+    if (!lastMessage) return;
+
+    if (
+      (lastMessage.type === 'BUS_UPDATE' || lastMessage.type === 'HARDWARE_EVENT') &&
+      lastMessage.data &&
+      lastMessage.data.busNumber === activeBus
+    ) {
+      const b = lastMessage.data;
+      const capacity = b.capacity || 40;
+      const currentCount = b.currentCount || 0;
+      const occupancyPercentage = capacity > 0 ? Math.min(100, Math.round((currentCount / capacity) * 100)) : 0;
+      const isFull = occupancyPercentage >= 90;
+      const seatsAvailable = Math.max(0, capacity - currentCount);
+      const stops = b.stops || [];
+      const currentIndex = b.currentStopIndex || 0;
+      const currentStop = stops[currentIndex] || b.currentStop || 'Departing Station';
+      const nextStop = stops[currentIndex + 1] || (b.routeType === 'loop' && stops.length > 0 ? stops[0] : 'Terminus');
+
+      setBusData((prev) => ({
+        ...prev,
+        ...b,
+        occupancyPercentage,
+        isFull,
+        seatsAvailable,
+        currentStop,
+        nextStop,
+        lastUpdated: new Date().toISOString()
+      }));
+      setLastSync(new Date());
+    }
+
+    if (lastMessage.type === 'HARDWARE_STATUS') {
+      const isTarget = Boolean(
+        lastMessage.connected &&
+        (lastMessage.targetBus === activeBus || lastMessage.busNumber === activeBus)
+      );
+      setBusData((prev) => {
+        if (!prev) return prev;
+        if (prev.isHardwareConnected === isTarget) return prev;
+        return {
+          ...prev,
+          isHardwareConnected: isTarget
+        };
+      });
+    }
+
+    if (lastMessage.type === 'FLEET_UPDATE' && Array.isArray(lastMessage.data)) {
+      const matching = lastMessage.data.find((b) => b.busNumber === activeBus);
+      if (matching) {
+        const capacity = matching.capacity || 40;
+        const currentCount = matching.currentCount || 0;
+        const occupancyPercentage = capacity > 0 ? Math.min(100, Math.round((currentCount / capacity) * 100)) : 0;
+        const isFull = occupancyPercentage >= 90;
+        const seatsAvailable = Math.max(0, capacity - currentCount);
+        const stops = matching.stops || [];
+        const currentIndex = matching.currentStopIndex || 0;
+        const currentStop = stops[currentIndex] || matching.currentStop || 'Departing Station';
+        const nextStop = stops[currentIndex + 1] || (matching.routeType === 'loop' && stops.length > 0 ? stops[0] : 'Terminus');
+
+        setBusData((prev) => ({
+          ...prev,
+          ...matching,
+          occupancyPercentage,
+          isFull,
+          seatsAvailable,
+          currentStop,
+          nextStop,
+          lastUpdated: new Date().toISOString()
+        }));
+        setLastSync(new Date());
+      }
+    }
+  }, [lastMessage, activeBus]);
 
   // Fetch tracking data for a specific bus
   const fetchTrackData = useCallback(async (busNum, isManual = false) => {
@@ -199,8 +277,10 @@ const PassengerTrack = () => {
         {/* Polling & Live Heartbeat Header */}
         <div className="flex items-center justify-between px-1 text-xs font-mono text-textSecondary">
           <div className="flex items-center space-x-2">
-            <span className="dot dot-online animate-pulse" />
-            <span className="text-white font-medium">Live Telemetry</span>
+            <span className={`w-2 h-2 rounded-full ${busData?.isHardwareConnected ? 'bg-safe animate-pulse' : 'bg-gray-500'}`} />
+            <span className="text-white font-medium">
+              {busData?.isHardwareConnected ? 'ONLINE' : 'OFFLINE'}
+            </span>
             <span className="text-textTertiary hidden sm:inline">•</span>
             <span className="text-textTertiary hidden sm:inline">Auto-refresh in {countdown}s</span>
           </div>
@@ -258,14 +338,15 @@ const PassengerTrack = () => {
             }`}
           >
             {/* Card Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-borderMuted">
-              <div>
-                <div className="flex items-center space-x-2.5">
-                  <span className="font-mono text-2xl font-bold text-white tracking-wide">
+            <div className="pb-4 border-b border-borderMuted space-y-3">
+              {/* Top Row: Bus Number + Seat Banner */}
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-mono text-xl sm:text-2xl font-bold text-white tracking-wide">
                     {busData.busNumber}
                   </span>
                   <span
-                    className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold ${
+                    className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold whitespace-nowrap ${
                       busData.status === 'ON_THE_WAY'
                         ? 'bg-safe/20 text-safe border border-safe/30'
                         : 'bg-warning/20 text-warning border border-warning/30'
@@ -274,37 +355,45 @@ const PassengerTrack = () => {
                     {busData.status?.replace(/_/g, ' ') || 'ACTIVE'}
                   </span>
                 </div>
-                <div className="flex items-center space-x-2 text-xs font-mono text-textSecondary mt-1">
-                  <Radio size={12} className="text-safe" />
-                  <span>Route: {busData.routeType === 'loop' ? 'Loop Transit' : 'Linear Point-to-Point'}</span>
-                  {busData.isHardwareConnected && (
+
+                {/* Seats Available / Bus Full Banner */}
+                <div
+                  className={`px-3 py-2 rounded-card flex items-center space-x-1.5 font-mono font-bold text-xs uppercase tracking-wider shrink-0 ${
+                    isFull
+                      ? 'bg-danger text-white shadow-glowDanger animate-pulse'
+                      : 'bg-safe text-darkBg shadow-glowSafe'
+                  }`}
+                >
+                  {isFull ? (
                     <>
-                      <span>•</span>
-                      <span className="text-safe">ESP32 IoT Online</span>
+                      <AlertTriangle size={16} strokeWidth={2.5} />
+                      <span>BUS FULL</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 size={16} strokeWidth={2.5} />
+                      <span>SEATS AVAILABLE</span>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* High-visibility Seats Available / Bus Full Banner */}
-              <div
-                className={`px-4 py-2.5 rounded-card flex items-center space-x-2 font-mono font-bold text-xs uppercase tracking-wider self-start sm:self-center ${
-                  isFull
-                    ? 'bg-danger text-white shadow-glowDanger animate-pulse'
-                    : 'bg-safe text-darkBg shadow-glowSafe'
-                }`}
-              >
-                {isFull ? (
-                  <>
-                    <AlertTriangle size={18} strokeWidth={2.5} />
-                    <span>BUS FULL</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 size={18} strokeWidth={2.5} />
-                    <span>SEATS AVAILABLE</span>
-                  </>
-                )}
+              {/* Info Row: Route • Status • Conductor in a grid */}
+              <div className="grid grid-cols-3 gap-2 text-[11px] font-mono">
+                <div className="flex items-center gap-1.5 text-textSecondary">
+                  <Radio size={11} className="text-safe shrink-0" />
+                  <span className="truncate">{busData.routeType === 'loop' ? 'Loop Transit' : 'Linear P2P'}</span>
+                </div>
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${busData.isHardwareConnected ? 'bg-safe animate-pulse' : 'bg-gray-500'}`} />
+                  <span className={`font-bold ${busData.isHardwareConnected ? 'text-safe' : 'text-textTertiary'}`}>
+                    {busData.isHardwareConnected ? 'ONLINE' : 'OFFLINE'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-end gap-1.5 text-textSecondary">
+                  <Users size={11} className="shrink-0" />
+                  <span className="truncate">{busData.conductorName || 'Staff'}</span>
+                </div>
               </div>
             </div>
 

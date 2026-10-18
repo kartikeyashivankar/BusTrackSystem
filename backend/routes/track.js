@@ -40,6 +40,7 @@ router.get('/:busNumber', async (req, res) => {
       nextStop,
       stops,
       isHardwareConnected: bus.isHardwareConnected,
+      conductorName: bus.conductorName || 'Assigned Staff',
       lastUpdated: new Date().toISOString()
     });
   } catch (error) {

@@ -23,8 +23,10 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
     if (user.role === 'conductor') {
       return <Navigate to={`/conductor/${user.assignedBus || 'MH-40-AA-1111'}`} replace />;
+    } else if (user.role === 'admin') {
+      return <Navigate to="/dashboard" replace />;
     }
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return children;

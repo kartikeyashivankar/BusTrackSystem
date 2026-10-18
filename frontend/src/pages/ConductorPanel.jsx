@@ -9,12 +9,39 @@ import {
   AlertTriangle,
   Radio,
   Wifi,
-  WifiOff
+  WifiOff,
+  ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
 import api from '../utils/api';
 import StatusDot from '../components/StatusDot';
+
+const CONDUCTOR_MAP = {
+  'MH-40-AA-1111': 'Conductor Rajesh',
+  'MH-40-AA-2222': 'Conductor Suresh',
+  'MH-40-AA-3333': 'Conductor Amit',
+  'MH-40-AA-4444': 'Conductor Ramesh',
+  'MH-40-AA-5555': 'Conductor Dinesh',
+  'MH-40-AA-6666': 'Conductor Manoj',
+  'MH-40-AA-7777': 'Conductor Ganesh',
+  'MH-40-AA-8888': 'Conductor Vijay',
+  'MH-40-AA-9999': 'Conductor Sunil',
+  'MH-40-AA-1010': 'Conductor Anand'
+};
+
+const DEFAULT_FLEET = [
+  'MH-40-AA-1111',
+  'MH-40-AA-2222',
+  'MH-40-AA-3333',
+  'MH-40-AA-4444',
+  'MH-40-AA-5555',
+  'MH-40-AA-6666',
+  'MH-40-AA-7777',
+  'MH-40-AA-8888',
+  'MH-40-AA-9999',
+  'MH-40-AA-1010'
+];
 
 const ConductorPanel = () => {
   const { busNumber: routeParamBus } = useParams();
@@ -26,11 +53,31 @@ const ConductorPanel = () => {
   const busNumber = routeParamBus || user?.assignedBus || 'MH-40-AA-1111';
 
   const [bus, setBus] = useState(null);
+  const [fleetList, setFleetList] = useState(DEFAULT_FLEET);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [showLoopModal, setShowLoopModal] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Fetch all fleet buses for the dropdown selector
+  useEffect(() => {
+    let isMounted = true;
+    const fetchFleet = async () => {
+      try {
+        const res = await api.get('/buses');
+        if (isMounted && Array.isArray(res.data) && res.data.length > 0) {
+          setFleetList(res.data.map((b) => b.busNumber));
+        }
+      } catch (err) {
+        console.warn('Could not fetch fleet for conductor panel:', err.message);
+      }
+    };
+    fetchFleet();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Fetch initial bus data
   useEffect(() => {
@@ -55,6 +102,14 @@ const ConductorPanel = () => {
     };
   }, [busNumber]);
 
+  // Dropdown selector handler to switch and view any bus route/stations
+  const handleBusChange = (newBusNumber) => {
+    if (newBusNumber && newBusNumber !== busNumber) {
+      setErrorMessage('');
+      navigate(`/conductor/${newBusNumber}`);
+    }
+  };
+
   // Real-time synchronization from WebSocket
   useEffect(() => {
     if (!lastMessage) return;
@@ -68,6 +123,31 @@ const ConductorPanel = () => {
         ...prev,
         ...lastMessage.data
       }));
+    }
+
+    if (lastMessage.type === 'HARDWARE_STATUS') {
+      const isTarget = Boolean(
+        lastMessage.connected &&
+        (lastMessage.targetBus === busNumber || lastMessage.busNumber === busNumber)
+      );
+      setBus((prev) => {
+        if (!prev) return prev;
+        if (prev.isHardwareConnected === isTarget) return prev;
+        return {
+          ...prev,
+          isHardwareConnected: isTarget
+        };
+      });
+    }
+
+    if (lastMessage.type === 'FLEET_UPDATE' && Array.isArray(lastMessage.data)) {
+      const matching = lastMessage.data.find((b) => b.busNumber === busNumber);
+      if (matching) {
+        setBus((prev) => ({
+          ...prev,
+          ...matching
+        }));
+      }
     }
   }, [lastMessage, busNumber]);
 
@@ -191,17 +271,50 @@ const ConductorPanel = () => {
       {/* Top Header */}
       <div>
         <div className="flex items-center justify-between pb-3 border-b border-borderMuted">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="font-mono text-xl font-bold tracking-wide">{bus.busNumber}</span>
-              <StatusDot status={dotStatus} />
+          <div className="flex-1 mr-2">
+            <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+              {/* Bus Route Dropdown Selector */}
+              <div className="relative inline-block">
+                <select
+                  value={bus.busNumber || busNumber}
+                  onChange={(e) => handleBusChange(e.target.value)}
+                  className="appearance-none bg-gray-900 border border-borderMuted hover:border-safe/60 focus:border-safe text-white font-mono text-base font-bold pl-2.5 pr-7 py-1 rounded-btn cursor-pointer transition focus:outline-none focus:ring-1 focus:ring-safe tracking-wide"
+                  title="Select Bus to view Route & Stations"
+                >
+                  {fleetList.map((num) => (
+                    <option key={num} value={num} className="bg-darkBg text-white font-mono text-sm py-1">
+                      {num}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2 text-textTertiary">
+                  <ChevronDown size={15} />
+                </div>
+              </div>
+
+              {/* Simple Online / Offline status message */}
+              <span
+                className={`text-[10px] font-mono px-2 py-1 rounded font-bold uppercase tracking-wider flex items-center ${
+                  isHardwareConnected
+                    ? 'bg-safe/20 text-safe border border-safe/30'
+                    : 'bg-gray-800 text-textTertiary border border-borderMuted'
+                }`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                    isHardwareConnected ? 'bg-safe animate-pulse' : 'bg-gray-500'
+                  }`}
+                />
+                {isHardwareConnected ? 'ONLINE' : 'OFFLINE'}
+              </span>
             </div>
-            <p className="text-[10px] text-textSecondary uppercase font-mono mt-0.5">
-              Conductor: {user?.name || 'Assigned Staff'}
+
+            <p className="text-[11px] text-textSecondary uppercase font-mono mt-1">
+              Conductor: <span className="text-white font-medium">{bus.conductorName || CONDUCTOR_MAP[bus.busNumber] || 'Assigned Staff'}</span>
             </p>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => setShowResetModal(true)}
               title="Reset Count"
@@ -224,9 +337,11 @@ const ConductorPanel = () => {
           isDanger ? 'border-danger/40 shadow-glowDanger' : isWarning ? 'border-warning/30' : 'border-borderMuted'
         }`}>
           <div>
-            <div className="flex items-center space-x-1.5 text-xs text-textSecondary font-mono uppercase mb-1">
+            <div className="flex items-center space-x-1.5 text-xs font-mono uppercase mb-1">
               <Radio size={14} className={isHardwareConnected ? 'text-safe animate-pulse' : 'text-textTertiary'} />
-              <span>Hardware Occupancy</span>
+              <span className={`font-bold tracking-wider ${isHardwareConnected ? 'text-safe' : 'text-textTertiary'}`}>
+                {isHardwareConnected ? 'ONLINE' : 'OFFLINE'}
+              </span>
             </div>
             <div className="flex items-baseline space-x-1.5">
               <span className="font-mono text-3xl font-bold text-white">{currentCount}</span>
@@ -394,8 +509,10 @@ const ConductorPanel = () => {
             </div>
             <div>
               <h3 className="text-lg font-bold text-white">Reset Passenger Count?</h3>
-              <p className="text-xs text-textSecondary mt-1">
-                This will reset the active hardware passenger count back to 0. Use this if sensor calibration is needed.
+              <p className="text-xs text-textSecondary mt-1 leading-relaxed">
+                {isHardwareConnected
+                  ? 'This will reset the active hardware passenger count and physical ESP32 LCD counter back to 0.'
+                  : 'This will reset the passenger count in the system back to 0.'}
               </p>
             </div>
 

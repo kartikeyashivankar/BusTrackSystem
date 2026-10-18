@@ -5,32 +5,43 @@ export const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || null);
+  const [token, setToken] = useState(() => sessionStorage.getItem('token') || null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const initializeAuth = async () => {
-      const savedToken = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
+      // Purge any legacy persistent localStorage auth to prevent unexpected direct-login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+
+      const savedToken = sessionStorage.getItem('token');
+      const savedUser = sessionStorage.getItem('user');
 
       if (savedToken && savedUser) {
         try {
-          setUser(JSON.parse(savedUser));
-          // Validate token with backend
+          // Validate token strictly with backend before trusting session
           const res = await api.get('/auth/me', {
             headers: { Authorization: `Bearer ${savedToken}` }
           });
           if (res.data) {
             setUser(res.data);
-            localStorage.setItem('user', JSON.stringify(res.data));
+            setToken(savedToken);
+            sessionStorage.setItem('user', JSON.stringify(res.data));
+          } else {
+            throw new Error('Invalid user payload');
           }
         } catch (err) {
           console.warn('Session expired or invalid, logging out', err.message);
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          sessionStorage.removeItem('token');
+          sessionStorage.removeItem('user');
           setToken(null);
           setUser(null);
         }
+      } else {
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        setToken(null);
+        setUser(null);
       }
       setLoading(false);
     };
@@ -39,13 +50,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (userData, authToken) => {
-    localStorage.setItem('token', authToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+    sessionStorage.setItem('token', authToken);
+    sessionStorage.setItem('user', JSON.stringify(userData));
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setToken(authToken);
     setUser(userData);
   };
 
   const logout = () => {
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setToken(null);

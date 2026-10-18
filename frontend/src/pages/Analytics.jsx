@@ -487,7 +487,7 @@ const Analytics = () => {
                       </span>
                     ) : (
                       <span className="text-[10px] uppercase font-bold text-textTertiary bg-gray-900 border border-borderMuted px-2 py-0.5 rounded">
-                        Simulated
+                        Offline
                       </span>
                     )}
                   </td>

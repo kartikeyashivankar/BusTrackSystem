@@ -10,18 +10,27 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const { user, loading: authLoading, login } = useAuth();
 
-  // If already authenticated, redirect based on role
+  // If already authenticated and session check is complete, redirect based on role
   React.useEffect(() => {
-    if (user) {
+    if (!authLoading && user) {
       if (user.role === 'admin') {
         navigate('/dashboard', { replace: true });
       } else if (user.role === 'conductor') {
         navigate(`/conductor/${user.assignedBus || 'MH-40-AA-1111'}`, { replace: true });
       }
     }
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-darkBg flex items-center justify-center font-mono text-xs text-textSecondary">
+        <div className="w-5 h-5 border-2 border-safe border-t-transparent rounded-full animate-spin mr-3" />
+        Verifying session...
+      </div>
+    );
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
